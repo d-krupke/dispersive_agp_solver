@@ -1,7 +1,9 @@
+import typing
+
+import pyvispoly
+
 from .instance import Instance
 from .sat_model import SatModel
-import typing
-import pyvispoly
 from .timer import Timer
 
 

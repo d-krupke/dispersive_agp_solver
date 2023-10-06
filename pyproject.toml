@@ -20,7 +20,9 @@ classifiers = [
     "Development Status :: 3 - Alpha",
 ]
 dependencies = [
-"pyvispoly"
+"pyvispoly",
+"python-sat",
+"networkx",
 ]
 
 

@@ -3,28 +3,25 @@ This file implements an exact solver for the dispersion AGP problem.
 The used SAT-formula is in a separate file.
 """
 
-import typing
 import itertools
-from pysat.solvers import Glucose4
 import typing
-from .instance import Instance
-from .geodesic_distances import GeodesicDistances
-import pyvispoly
-from .timer import Timer
 
+import pyvispoly
+
+from .geodesic_distances import GeodesicDistances
+from .instance import Instance
 from .sat_model_full_coverage import SatModelWithFullCoverage
+from .timer import Timer
 
 
 class DispAgpSolverObserver:
-
     def on_coverage_iteration(
         self,
         guards: typing.List[int],
         witnesses: typing.List[typing.Tuple[pyvispoly.Point, typing.List[int]]],
         missing_areas: typing.List[pyvispoly.PolygonWithHoles],
-    ):
+    ) -> None:
         pass
-
 
     def on_new_solution(
         self,
@@ -32,9 +29,8 @@ class DispAgpSolverObserver:
         objective: float,
         closest_pair: typing.Tuple[int, int],
         witnesses: typing.List[typing.Tuple[pyvispoly.Point, typing.List[int]]],
-    ):
+    ) -> None:
         pass
-
 
 
 class DispAgpSolver:
@@ -65,16 +61,16 @@ class DispAgpSolver:
         self.objective = self._distances[-1][1]
         self.closest_pair = self._distances[-1][0]
         self.observer = DispAgpSolverObserver()
-    
-    def _propagate_distances(self):
+
+    def _propagate_distances(self) -> None:
         """
         Propagate distance constraints.
         """
-        (i,j), d = self._distances[-1]
+        (i, j), d = self._distances[-1]
         while i not in self.guards or j not in self.guards:
             self._distances.pop()
             self._sat_model.prohibit_guard_pair(i, j)
-            (i,j), d = self._distances[-1]
+            (i, j), d = self._distances[-1]
         if not self._distances:
             self.objective = float("inf")
             assert len(self.guards) == 1
@@ -83,7 +79,9 @@ class DispAgpSolver:
             self.objective = self._distances[-1][1]
             self.closest_pair = self._distances[-1][0]
 
-    def get_witnesses(self):
+    def get_witnesses(
+        self,
+    ) -> typing.List[typing.Tuple[pyvispoly.Point, typing.List[int]]]:
         return self._sat_model.witnesses
 
     def optimize(self, timelimit: float = 900) -> typing.Optional[typing.List[int]]:
@@ -91,17 +89,23 @@ class DispAgpSolver:
         Return a list of indices of guards that should be selected.
         """
         timer = Timer(timelimit)
-        feasible = self._sat_model.solve(timelimit=timer.remaining(),
-                                         on_iteration=self.observer.on_coverage_iteration)
+        feasible = self._sat_model.solve(
+            timelimit=timer.remaining(),
+            on_iteration=self.observer.on_coverage_iteration,
+        )
         while feasible and self._distances:
-            self.observer.on_new_solution(self.guards, self.objective, self.closest_pair, self.get_witnesses())
+            self.observer.on_new_solution(
+                self.guards, self.objective, self.closest_pair, self.get_witnesses()
+            )
             self.guards = self._sat_model.get_solution()
             self._propagate_distances()
             if not self._distances:
                 break  # single guard left, infinite objective
             # enforce a shorter distance and resolve
-            (i,j), d = self._distances.pop()
+            (i, j), d = self._distances.pop()
             self._sat_model.prohibit_guard_pair(i, j)
-            feasible = self._sat_model.solve(timelimit=timer.remaining(),
-                                    on_iteration=self.observer.on_coverage_iteration)
+            feasible = self._sat_model.solve(
+                timelimit=timer.remaining(),
+                on_iteration=self.observer.on_coverage_iteration,
+            )
         return self.guards

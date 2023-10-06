@@ -21,7 +21,7 @@ class Timer:
         The remaining time.
         """
         val = self.runtime - self.time()
-        if throwing and  val <= 0:
+        if throwing and val <= 0:
             raise TimeoutError()
         return val
 
