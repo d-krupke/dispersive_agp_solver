@@ -17,11 +17,22 @@ implications for commercial use (unlikely).
 
 ## Installation
 
-The code is properly packaged and can be installed via pip. This allows you to
-easily play around with the code and convince yourself that it works, without
-having to deal with complex compilation issues or dependencies.
+You can easily install and use the solver via pip:
 
-TODO: The visibility package is not public yet.
+```bash
+pip install --verbose git+https://github.com/d-krupke/dispersive_agp_solver
+```
+
+We put some effort into making the installation as easy as possible. However,
+you will need to have a modern C++-compiler installed. There may also be some
+problems with Windows. The installation of the dependencies can take a while as
+CGAL will be locally installed (and compiled). Depending on your system, this
+can take up to 30 minutes.
+
+You could also try to install the visibility polygon dependency
+[pyvispoly](https://github.com/d-krupke/pyvispoly) before installing this
+package. This dependency is probably the most difficult to install. If you
+manage to install it, the installation of this package should be easy.
 
 ## Algorithm
 
