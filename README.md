@@ -9,10 +9,6 @@ constraints for coverage via witnesses to solve the problem. The minimal
 distance is incrementally increased until the formula becomes infeasible, which
 indicates that the previous distance was the optimal one.
 
-The code is written in Python with C++-bindings for CGAL. However, the CGAL-part
-was outsourced to an auxiliary library. The CGAL-part may have some license
-implications for commercial use (unlikely).
-
 ![example](https://github.com/d-krupke/dispersive_agp_solver/blob/main/docs/figures/animation.gif?raw=true)
 
 ## Installation
@@ -56,3 +52,8 @@ Now we repeatedly do the following:
 - If the missing area is not empty, we find witnesses for the missing area and
   enforce at least of guard within the visibility range of each witness. This is
   again a simple OR-clause.
+
+## License
+
+While this code is licensed under the MIT license, it has a dependency on [CGAL](https://www.cgal.org/),
+which is licensed under GPL. This may have some implications for commercial use.
