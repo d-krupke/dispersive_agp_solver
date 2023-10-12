@@ -58,35 +58,35 @@ The algorithm is based on an incremental SAT-model, in which we
 * incrementally increase the minimal distance between guards until the formula
   becomes infeasible
 
+### Algorithm 1: Dispersive Gallery Optimization
+
 **Input**: A polygon \( P \)  
-**Output**: A set of guards ensuring maximum dispersion  
+**Output**: A set of guards ensuring maximum dispersion
 
-1: Initialize \( \text{vertices} = P.\text{vertices} \)  
-2: Initialize \( \text{SATFormula} \) as an empty SAT instance  
-3: For \( v \) in \( \text{vertices} \):  
-&nbsp;&nbsp;&nbsp;&nbsp;Introduce a new Boolean variable \( x_v \) into \( \text{SATFormula} \) representing the placement of a guard at vertex \( v \)  
-
-4: Add a clause to \( \text{SATFormula} \) to enforce at least one guard:  
-&nbsp;&nbsp;&nbsp;&nbsp;\[ \bigvee_{v \in \text{vertices}} x_v \]  
-
-5: **while** True:  
-&nbsp;&nbsp;&nbsp;&nbsp;5.1: \( \text{solution} \) = Solve(\( \text{SATFormula} \))  
-&nbsp;&nbsp;&nbsp;&nbsp;5.2: **if not** \( \text{solution} \):  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Return \( \text{LastFeasibleSolution} \)  
-&nbsp;&nbsp;&nbsp;&nbsp;5.3: \( \text{guards} \) = { \( v \) | \( v \) in \( \text{vertices} \) and \( \text{solution}(x_v) \) is True }  
-&nbsp;&nbsp;&nbsp;&nbsp;5.4: \( \text{missingArea} \) = ComputeMissingArea(\( P, \text{guards} \))  
-&nbsp;&nbsp;&nbsp;&nbsp;5.5: **if** \( \text{missingArea} \) is empty:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.1: \( \text{LastFeasibleSolution} \) = \( \text{guards} \)  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.2: \( g_1, g_2 \) = FindClosestGuardsPair(\( \text{guards} \))  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.3: Add a new clause to \( \text{SATFormula} \) to prevent \( g_1 \) and \( g_2 \) from being chosen simultaneously:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\[ \neg x_{g_1} \vee \neg x_{g_2} \]  
-&nbsp;&nbsp;&nbsp;&nbsp;5.6: **else**:  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1: For \( \text{witness} \) in FindWitnessesForMissingArea(\( \text{missingArea} \)):  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1.1: \( \text{visibleGuards} \) = FindVisibleGuards(\( \text{witness}, \text{guards} \))  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1.2: Add a new clause to \( \text{SATFormula} \):  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\[ \bigvee_{g \in \text{visibleGuards}} x_g \]  
-
-**End**
+```markdown
+1. Initialize `vertices = P.vertices`
+2. Initialize `SATFormula` as an empty SAT instance
+3. For `v` in `vertices`:
+   - Introduce a new Boolean variable \( x_v \) into `SATFormula` representing the placement of a guard at vertex `v`
+4. Add a clause to `SATFormula` to enforce at least one guard:  
+   \[ \bigvee_{v \in \text{vertices}} x_v \]
+5. **while** True:
+   1. `solution = Solve(SATFormula)`
+   2. **if not** `solution`:  
+      - Return `LastFeasibleSolution`
+   3. `guards = { v | v in vertices and solution(x_v) is True }`
+   4. `missingArea = ComputeMissingArea(P, guards)`
+   5. **if** `missingArea` is empty:
+      1. `LastFeasibleSolution = guards`
+      2. \( g_1, g_2 \) = `FindClosestGuardsPair(guards)`
+      3. Add a new clause to `SATFormula` to prevent \( g_1 \) and \( g_2 \) from being chosen simultaneously:  
+      \[ \neg x_{g_1} \vee \neg x_{g_2} \]
+   6. **else**:
+      1. For `witness` in `FindWitnessesForMissingArea(missingArea)`:
+         1. `visibleGuards = FindVisibleGuards(witness, guards)`
+         2. Add a new clause to `SATFormula`:  
+         \[ \bigvee_{g \in \text{visibleGuards}} x_g \]
+```
 
 
 
