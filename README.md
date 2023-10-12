@@ -11,6 +11,26 @@ indicates that the previous distance was the optimal one.
 
 ![example](https://github.com/d-krupke/dispersive_agp_solver/blob/main/docs/figures/animation.gif?raw=true)
 
+## Problem Description
+
+
+**Optimization Dispersive Art Gallery Problem (Vertex Guarding)**
+
+**Input:**
+1. A polygon \( P \) with vertices \( V(P) \).
+
+**Objective:** 
+Determine the maximum distance \( \ell^* \) such that there exists a set of guards, \( G \), positioned on the vertices of the polygon \( P \) (i.e., \( G \subseteq V(P) \)) with the following properties:
+
+1. Every point inside \( P \) is visible to at least one guard in \( G \).
+2. The pairwise geodesic distances between any two guards in \( G \) are at least \( \ell^* \).
+
+---
+
+Note: The visibility between a point and a guard is determined by a straight line segment that does not intersect the exterior of the polygon \( P \).
+
+This problem was introduced by [Rieck and Scheffer](https://arxiv.org/pdf/2209.10291.pdf).
+
 ## Installation
 
 You can easily install and use the solver via pip:
@@ -32,26 +52,43 @@ manage to install it, the installation of this package should be easy.
 
 ## Algorithm
 
-The algorithm is based on the following SAT-formula:
+The algorithm is based on an incremental SAT-model, in which we
+* incrementally ensure full coverage of the polygon by adding witnesses for
+  missing areas
+* incrementally increase the minimal distance between guards until the formula
+  becomes infeasible
 
-- Create a boolean variable for each vertex representing placing a guard at this
-  position.
-- Enforce that one of the guards has to be used (simple OR-clause over all
-  variables).
+**Input**: A polygon \( P \)  
+**Output**: A set of guards ensuring maximum dispersion  
 
-Now we repeatedly do the following:
+1: Initialize \( \text{vertices} = P.\text{vertices} \)  
+2: Initialize \( \text{SATFormula} \) as an empty SAT instance  
+3: For \( v \) in \( \text{vertices} \):  
+&nbsp;&nbsp;&nbsp;&nbsp;Introduce a new Boolean variable \( x_v \) into \( \text{SATFormula} \) representing the placement of a guard at vertex \( v \)  
 
-- Solve the SAT-formula.
-- If the formula is infeasible, we have restricted the sparsification too much.
-  Return last feasible solution.
-- Compute the missing area (i.e., the area that is not covered by the selected
-  guards).
-- If the missing area is empty, we have a new feasible solution. To improve it
-  further, we find the closest two used guards and prohibit them to be used at
-  the same time. This is a simple OR-clause.
-- If the missing area is not empty, we find witnesses for the missing area and
-  enforce at least of guard within the visibility range of each witness. This is
-  again a simple OR-clause.
+4: Add a clause to \( \text{SATFormula} \) to enforce at least one guard:  
+&nbsp;&nbsp;&nbsp;&nbsp;\[ \bigvee_{v \in \text{vertices}} x_v \]  
+
+5: **while** True:  
+&nbsp;&nbsp;&nbsp;&nbsp;5.1: \( \text{solution} \) = Solve(\( \text{SATFormula} \))  
+&nbsp;&nbsp;&nbsp;&nbsp;5.2: **if not** \( \text{solution} \):  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Return \( \text{LastFeasibleSolution} \)  
+&nbsp;&nbsp;&nbsp;&nbsp;5.3: \( \text{guards} \) = { \( v \) | \( v \) in \( \text{vertices} \) and \( \text{solution}(x_v) \) is True }  
+&nbsp;&nbsp;&nbsp;&nbsp;5.4: \( \text{missingArea} \) = ComputeMissingArea(\( P, \text{guards} \))  
+&nbsp;&nbsp;&nbsp;&nbsp;5.5: **if** \( \text{missingArea} \) is empty:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.1: \( \text{LastFeasibleSolution} \) = \( \text{guards} \)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.2: \( g_1, g_2 \) = FindClosestGuardsPair(\( \text{guards} \))  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.5.3: Add a new clause to \( \text{SATFormula} \) to prevent \( g_1 \) and \( g_2 \) from being chosen simultaneously:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\[ \neg x_{g_1} \vee \neg x_{g_2} \]  
+&nbsp;&nbsp;&nbsp;&nbsp;5.6: **else**:  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1: For \( \text{witness} \) in FindWitnessesForMissingArea(\( \text{missingArea} \)):  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1.1: \( \text{visibleGuards} \) = FindVisibleGuards(\( \text{witness}, \text{guards} \))  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.6.1.2: Add a new clause to \( \text{SATFormula} \):  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\[ \bigvee_{g \in \text{visibleGuards}} x_g \]  
+
+**End**
+
+
 
 ## License
 
