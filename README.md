@@ -63,7 +63,7 @@ The algorithm is based on an incremental SAT-model, in which we
 **Input**: A polygon \( P \)  
 **Output**: A set of guards ensuring maximum dispersion
 
-```markdown
+
 1. Initialize `vertices = P.vertices`
 2. Initialize `SATFormula` as an empty SAT instance
 3. For `v` in `vertices`:
@@ -86,7 +86,7 @@ The algorithm is based on an incremental SAT-model, in which we
          1. `visibleGuards = FindVisibleGuards(witness, guards)`
          2. Add a new clause to `SATFormula`:  
          \[ \bigvee_{g \in \text{visibleGuards}} x_g \]
-```
+
 
 
 
