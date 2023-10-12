@@ -67,9 +67,9 @@ The algorithm is based on an incremental SAT-model, in which we
 1. Initialize `vertices = P.vertices`
 2. Initialize `SATFormula` as an empty SAT instance
 3. For `v` in `vertices`:
-   - Introduce a new Boolean variable \( x_v \) into `SATFormula` representing the placement of a guard at vertex `v`
+   - Introduce a new Boolean variable $x_v$ into `SATFormula` representing the placement of a guard at vertex `v`
 4. Add a clause to `SATFormula` to enforce at least one guard:  
-   \[ \bigvee_{v \in \text{vertices}} x_v \]
+   $\bigvee_{v \in \text{vertices}} x_v$
 5. **while** True:
    1. `solution = Solve(SATFormula)`
    2. **if not** `solution`:  
@@ -78,14 +78,13 @@ The algorithm is based on an incremental SAT-model, in which we
    4. `missingArea = ComputeMissingArea(P, guards)`
    5. **if** `missingArea` is empty:
       1. `LastFeasibleSolution = guards`
-      2. \( g_1, g_2 \) = `FindClosestGuardsPair(guards)`
-      3. Add a new clause to `SATFormula` to prevent \( g_1 \) and \( g_2 \) from being chosen simultaneously:  
-      \[ \neg x_{g_1} \vee \neg x_{g_2} \]
+      2. $g_1, g_2$ = `FindClosestGuardsPair(guards)`
+      3. Add a new clause to `SATFormula` to prevent $g_1$ and $g_2$ from being chosen simultaneously:  
+      $\neg x_{g_1} \vee \neg x_{g_2}$
    6. **else**:
       1. For `witness` in `FindWitnessesForMissingArea(missingArea)`:
          1. `visibleGuards = FindVisibleGuards(witness, guards)`
-         2. Add a new clause to `SATFormula`:  
-         \[ \bigvee_{g \in \text{visibleGuards}} x_g \]
+         2. Add a new clause to `SATFormula`: $\bigvee_{g \in \text{visibleGuards}} x_g$
 
 
 
