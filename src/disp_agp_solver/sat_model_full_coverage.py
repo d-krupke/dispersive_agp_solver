@@ -45,6 +45,7 @@ class SatModelWithFullCoverage:
             for i in range(self.instance.num_positions())
             if vis_poly.contains(self.instance.as_cgal_position(i))
         ]
+        assert guards, "Should not be empty."
         return guards
 
     def _add_witnesses_to_area(
@@ -59,6 +60,7 @@ class SatModelWithFullCoverage:
             self.witnesses.append((witness, guards))
             witnesses.append((witness, guards))
             self._sat_model.add_coverage_constraint(guards)
+        assert witnesses, "Should not be empty."
         return witnesses
 
     def solve(
@@ -76,9 +78,10 @@ class SatModelWithFullCoverage:
             witnesses = []
             for missing_area in missing_areas:
                 witnesses += self._add_witnesses_to_area(missing_area)
+                assert not set(witnesses[-1][1])&set(guards), "Redundant witness."
             if on_iteration is not None:
                 on_iteration(guards, witnesses, missing_areas)
-            self._sat_model.solve(timer.remaining())
+            feasible = self._sat_model.solve(timer.remaining())
             if not feasible:
                 return False
             guards = self._sat_model.get_solution()
