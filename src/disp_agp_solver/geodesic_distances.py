@@ -10,21 +10,28 @@ import math
 import typing
 
 import networkx as nx
-from pyvispoly import VisibilityPolygonCalculator
+from pyvispoly import VisibilityPolygonCalculator, Polygon
 
 from .instance import Instance
 
 
 class GeodesicDistances:
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: Instance, vis_polys: typing.Optional[typing.List[Polygon]]=None, visp: typing.Optional[VisibilityPolygonCalculator] = None) -> None:
         poly = instance.as_cgal_polygon()
-        self._visibility_polygon_calculator = VisibilityPolygonCalculator(poly)
-        self._vis_polys = [
-            self._visibility_polygon_calculator.compute_visibility_polygon(
-                instance.as_cgal_position(i)
-            )
-            for i in range(instance.num_positions())
-        ]
+        if visp is None:
+            self._visibility_polygon_calculator = VisibilityPolygonCalculator(poly)
+        else:
+            self._visibility_polygon_calculator = visp
+        if vis_polys is None:
+            self._vis_polys = [
+                self._visibility_polygon_calculator.compute_visibility_polygon(
+                    instance.as_cgal_position(i)
+                )
+                for i in range(instance.num_positions())
+            ]
+        else:
+            self._vis_polys = vis_polys
+            assert len(vis_polys) == instance.num_positions()
         self._graph = nx.Graph()
         self._graph.add_nodes_from(range(instance.num_positions()))
         for i in range(instance.num_positions()):
@@ -38,8 +45,19 @@ class GeodesicDistances:
         if not nx.is_connected(self._graph):
             msg = "Instance is not connected"
             raise ValueError(msg)
+        self._apsp = None
+        
+    def compute_all_distances(self) -> None:
+        """
+        Compute all distances.
+        """
+        if not self._apsp is not None:
+            self._apsp = dict(nx.all_pairs_dijkstra_path_length(self._graph, weight="weight"))
+    
 
     def distance(self, i: int, j: int) -> float:
+        if self._apsp:
+            return self._apsp[i][j]
         return nx.shortest_path_length(self._graph, i, j, weight="weight")
 
     def shortest_path(self, i: int, j: int) -> typing.List[int]:

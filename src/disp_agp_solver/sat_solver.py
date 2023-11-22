@@ -5,7 +5,8 @@ The used SAT-formula is in a separate file.
 
 import itertools
 import typing
-
+from typing import Any
+import logging
 import pyvispoly
 
 from .geodesic_distances import GeodesicDistances
@@ -47,20 +48,32 @@ class DispAgpSolver:
 
     """
 
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: Instance, solver: str="Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
+        if logger is None:
+            self._logger = logging.getLogger("DispAgpSolver")
+        else:
+            self._logger = logger
         self._instance = instance
         n = instance.num_positions()
-        self._sat_model = SatModelWithFullCoverage(instance)
+        self._logger.info("Building basic model...")
+        self._sat_model = SatModelWithFullCoverage(instance, solver=solver, logger=self._logger)
+        self._sat_model.add_witnesses_at_vertices()
         self.guards = list(range(n))
-        dist_calc = GeodesicDistances(instance)
+        self._logger.info("Setting up geodesic distances...")
+        dist_calc = GeodesicDistances(instance, vis_polys=self._sat_model.vis_polys_of_guards)
+        self._logger.info("Computing distances of all pairs...")
+        dist_calc.compute_all_distances()
+        self._logger.info("Sorting distances...")
         self._distances = [
             ((i, j), dist_calc.distance(i, j))
             for i, j in itertools.combinations(range(n), 2)
         ]
         self._distances.sort(key=lambda x: -x[1])
         self.objective = self._distances[-1][1]
+        self._logger.info("Initial objective is %d", self.objective)
         self.closest_pair = self._distances[-1][0]
         self.observer = DispAgpSolverObserver()
+        self._stats = []
 
     def _propagate_distances(self) -> None:
         """
@@ -83,6 +96,19 @@ class DispAgpSolver:
         self,
     ) -> typing.List[typing.Tuple[pyvispoly.Point, typing.List[int]]]:
         return self._sat_model.witnesses
+    
+
+    def _log_statistics(self, guards, objective, feasible, time):
+        self._stats.append({
+            "num_guards": len(guards) if guards is not None else 0,
+            "objective": objective,
+            "feasible": feasible,
+            "sat_stats": self._sat_model.get_statistics(),
+            "time": time,
+        })
+
+    def get_statistics(self):
+        return list(self._stats)
 
     def optimize(self, timelimit: float = 900) -> typing.Optional[typing.List[int]]:
         """
@@ -93,19 +119,24 @@ class DispAgpSolver:
             timelimit=timer.remaining(),
             on_iteration=self.observer.on_coverage_iteration,
         )
+        self._log_statistics(self.guards, self.objective, feasible, timer.time())
         while feasible and self._distances:
             self.observer.on_new_solution(
                 self.guards, self.objective, self.closest_pair, self.get_witnesses()
             )
             self.guards = self._sat_model.get_solution()
+            # based on the best feasible solution, we can directly prohibit
+            # all pairs that would create a worse solution, speeding up the search.
             self._propagate_distances()
             if not self._distances:
                 break  # single guard left, infinite objective
             # enforce a shorter distance and resolve
             (i, j), d = self._distances.pop()
             self._sat_model.prohibit_guard_pair(i, j)
+            timer.check()
             feasible = self._sat_model.solve(
-                timelimit=timer.remaining(),
+                timelimit=timer.time(),
                 on_iteration=self.observer.on_coverage_iteration,
             )
+            self._log_statistics(self.guards, self.objective, feasible, timer.remaining())
         return self.guards
