@@ -11,6 +11,8 @@ indicates that the previous distance was the optimal one.
 
 ![example](https://github.com/d-krupke/dispersive_agp_solver/blob/main/docs/figures/animation.gif?raw=true)
 
+![complex example](https://github.com/d-krupke/dispersive_agp_solver/blob/main/docs/figures/example_more_complex.gif?raw=true)
+
 ## Problem Description
 
 
@@ -87,7 +89,16 @@ The algorithm is based on an incremental SAT-model, in which we
          2. Add a new clause to `SATFormula`: $\bigvee_{g \in \text{visibleGuards}} x_g$
 
 
+## Potential Improvements
 
+Most of the time is used by the geometric operations, while the SAT-formulas remain harmless.
+Thus, one could try another approach by always computing an optimal solution for each witness set and
+only then start to extend it. This would drastically reduce the number of geometric operations.
+A lot of the data can be reused. Would require some changes in the code architecture.
+
+Alternative approaches could be based on a MIP or CP-SAT model.
+They would probably not be competitive.
+However, they could minimize the number of guards in parallel and, thus, potentially make larger optimization steps.
 
 ## License
 
