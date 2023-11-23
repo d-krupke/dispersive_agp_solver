@@ -5,29 +5,17 @@ import pyvispoly
 from .instance import Instance
 from .sat_model import SatModel
 from .timer import Timer
-
+from .guard_coverage import GuardCoverage
 
 class SatModelWithFullCoverage:
-    def __init__(self, instance: Instance, vispc: typing.Optional[pyvispoly.VisibilityPolygonCalculator] = None, solver: str = "Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage] = None, solver: str = "Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
         self.instance = instance
         if logger is None:
             self._logger = logging.getLogger("DispAgpFullCoverageSolver")
         else:
             self._logger = logger
         self._logger.info("Building basic full coverage model...")
-        n = instance.num_positions()
-        if vispc is None:
-            self._vis_calc = pyvispoly.VisibilityPolygonCalculator(
-                instance.as_cgal_polygon()
-            )
-        else:
-            self._vis_calc = vispc
-        guard_pos = [instance.as_cgal_position(i) for i in range(n)]
-        self._logger.info("Computing visibility polygons for guards...")
-        self.vis_polys_of_guards = [
-            pyvispoly.PolygonWithHoles(self._vis_calc.compute_visibility_polygon(p))
-            for p in guard_pos
-        ]
+        self._guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
         self._sat_model = SatModel(instance, solver=solver, logger=self._logger)
         self.witnesses = []
         self._num_prohibited_pairs = 0
@@ -36,23 +24,11 @@ class SatModelWithFullCoverage:
 
     def add_witnesses_at_vertices(self) -> None:
         self._logger.info("Adding witnesses at vertices...")
-        for i, p in enumerate(self.vis_polys_of_guards):
-            guards = self._get_guards_for_witness_visibility(p)
-            self.witnesses.append((self.instance.as_cgal_position(i), guards))
+        for v in range(self.instance.num_positions()):
+            visibility = self._guard_coverage.get_visibility_of_guard(v)
+            guards = self._guard_coverage.compute_guards_within_polygon(visibility)
+            self.witnesses.append((self.instance.as_cgal_position(v), guards))
             self._sat_model.add_coverage_constraint(guards)
-
-    def _compute_missing_areas(self, guards) -> typing.List[pyvispoly.PolygonWithHoles]:
-        """
-        Compute the missing area of the current guard set.
-        """
-        missing_area = [self.instance.as_cgal_polygon()]
-        coverages = [self.vis_polys_of_guards[i] for i in guards]
-        for coverage in coverages:
-            assert all(isinstance(p, pyvispoly.PolygonWithHoles) for p in missing_area)
-            assert isinstance(coverage, pyvispoly.PolygonWithHoles)
-            # difference is always a list of polygons as it can split a polygon into multiple parts
-            missing_area = sum((poly.difference(coverage) for poly in missing_area), [])
-        return missing_area
 
     def _get_guards_for_witness_visibility(self, visibility_poly: pyvispoly.Polygon) -> typing.List[int]:
         """
@@ -66,12 +42,6 @@ class SatModelWithFullCoverage:
         assert guards, "Should not be empty."
         return guards
 
-    def _get_guards_for_witness(self, witness: pyvispoly.Point) -> typing.List[int]:
-        """
-        Compute which vertex guard can see the given witness.
-        """
-        vis_poly = self._vis_calc.compute_visibility_polygon(witness)
-        return self._get_guards_for_witness_visibility(vis_poly)
 
     def _add_witnesses_to_area(
         self, poly: pyvispoly.PolygonWithHoles
@@ -81,7 +51,7 @@ class SatModelWithFullCoverage:
         """
         witnesses = []
         for witness in poly.interior_sample_points():
-            guards = self._get_guards_for_witness(witness)
+            guards = self._guard_coverage.compute_guards_for_witness(witness)
             self.witnesses.append((witness, guards))
             witnesses.append((witness, guards))
             self._sat_model.add_coverage_constraint(guards)
@@ -115,7 +85,7 @@ class SatModelWithFullCoverage:
             return False
         guards = self._sat_model.get_solution()
         self._logger.info("Computing missing areas...")
-        missing_areas = self._compute_missing_areas(guards)
+        missing_areas = self._guard_coverage.compute_uncovered_area(guards)
         self._log_statistics(guards, feasible, timer.remaining(), missing_areas)
         while missing_areas:
             witnesses = []
@@ -131,7 +101,7 @@ class SatModelWithFullCoverage:
                 return False
             guards = self._sat_model.get_solution()
             self._logger.info("Computing missing areas...")
-            missing_areas = self._compute_missing_areas(guards)
+            missing_areas = self._guard_coverage.compute_uncovered_area(guards)
             self._log_statistics(guards, feasible, timer.remaining(), missing_areas)
         return True
 

@@ -10,33 +10,18 @@ import math
 import typing
 
 import networkx as nx
-from pyvispoly import VisibilityPolygonCalculator, Polygon
 
 from .instance import Instance
-
+from .guard_coverage import GuardCoverage
 
 class GeodesicDistances:
-    def __init__(self, instance: Instance, vis_polys: typing.Optional[typing.List[Polygon]]=None, visp: typing.Optional[VisibilityPolygonCalculator] = None) -> None:
-        poly = instance.as_cgal_polygon()
-        if visp is None:
-            self._visibility_polygon_calculator = VisibilityPolygonCalculator(poly)
-        else:
-            self._visibility_polygon_calculator = visp
-        if vis_polys is None:
-            self._vis_polys = [
-                self._visibility_polygon_calculator.compute_visibility_polygon(
-                    instance.as_cgal_position(i)
-                )
-                for i in range(instance.num_positions())
-            ]
-        else:
-            self._vis_polys = vis_polys
-            assert len(vis_polys) == instance.num_positions()
+    def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]) -> None:
+        guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
         self._graph = nx.Graph()
         self._graph.add_nodes_from(range(instance.num_positions()))
         for i in range(instance.num_positions()):
             for j in range(i + 1, instance.num_positions()):
-                if self._vis_polys[i].contains(instance.as_cgal_position(j)):
+                if guard_coverage.can_guards_see_each_other(i, j):
                     dist = math.sqrt(
                         (instance.positions[i][0] - instance.positions[j][0]) ** 2
                         + (instance.positions[i][1] - instance.positions[j][1]) ** 2

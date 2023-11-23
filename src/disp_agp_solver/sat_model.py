@@ -20,7 +20,6 @@ class SatModel:
         self._num_prohibited_guards = 0
 
     def add_coverage_constraint(self, vertices: typing.List[int]):
-        # print("add_coverage_constraint:", vertices)
         assert all(0 <= i < self._instance.num_positions() for i in vertices)
         assert len(vertices) > 0
         self._sat_solver.add_clause([i + 1 for i in vertices])
@@ -31,7 +30,6 @@ class SatModel:
         """
         Prevent that these two guards are selected together.
         """
-        # print("add_distance_constraint:", guard_a, guard_b)
         assert 0 <= guard_a < self._instance.num_positions()
         assert 0 <= guard_b < self._instance.num_positions()
         assert guard_a != guard_b
