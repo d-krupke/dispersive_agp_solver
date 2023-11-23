@@ -14,7 +14,7 @@ import networkx as nx
 from .instance import Instance
 from .guard_coverage import GuardCoverage
 
-class GeodesicDistances:
+class GuardDistances:
     def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]) -> None:
         guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
         self._graph = nx.Graph()
@@ -31,6 +31,7 @@ class GeodesicDistances:
             msg = "Instance is not connected"
             raise ValueError(msg)
         self._apsp = None
+        self._sorted_distances = None
         
     def compute_all_distances(self) -> None:
         """
@@ -38,6 +39,22 @@ class GeodesicDistances:
         """
         if not self._apsp is not None:
             self._apsp = dict(nx.all_pairs_dijkstra_path_length(self._graph, weight="weight"))
+            self._sorted_distances = [
+                ((i, j), dist)
+                for i, j, dist in self._graph.edges(data="weight")
+            ]
+            self._sorted_distances.sort(key=lambda x: x[1])
+
+    def get_next_higher_distance(self, d: float) -> float:
+        """
+        Get the next higher distance.
+        """
+        self.compute_all_distances()
+        assert self._sorted_distances is not None
+        for (i, j), dist in self._sorted_distances:
+            if dist > d:
+                return dist
+        return math.inf
     
 
     def distance(self, i: int, j: int) -> float:

@@ -6,7 +6,7 @@ from pysat.solvers import Solver
 from .instance import Instance
 
 
-class SatModel:
+class BasicSatModel:
     def __init__(self, instance: Instance, solver: str = "Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
         if logger is None:
             self._logger = logging.getLogger("DispAgpSatModel")

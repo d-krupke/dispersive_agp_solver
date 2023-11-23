@@ -9,7 +9,7 @@ from typing import Any
 import logging
 import pyvispoly
 
-from .geodesic_distances import GeodesicDistances
+from .guard_distances import GuardDistances
 from .guard_coverage import GuardCoverage
 from .instance import Instance
 from .sat_model_full_coverage import SatModelWithFullCoverage
@@ -62,7 +62,7 @@ class DispAgpSolver:
         self._sat_model.add_witnesses_at_vertices()
         self.guards = list(range(n))
         self._logger.info("Setting up geodesic distances...")
-        dist_calc = GeodesicDistances(instance, guard_coverage)
+        dist_calc = GuardDistances(instance, guard_coverage)
         self._logger.info("Computing distances of all pairs...")
         dist_calc.compute_all_distances()
         self._logger.info("Sorting distances...")

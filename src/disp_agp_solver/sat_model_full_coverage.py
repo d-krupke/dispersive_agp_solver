@@ -3,7 +3,7 @@ import logging
 import pyvispoly
 
 from .instance import Instance
-from .sat_model import SatModel
+from .basic_sat_model import BasicSatModel
 from .timer import Timer
 from .guard_coverage import GuardCoverage
 
@@ -16,7 +16,7 @@ class SatModelWithFullCoverage:
             self._logger = logger
         self._logger.info("Building basic full coverage model...")
         self._guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
-        self._sat_model = SatModel(instance, solver=solver, logger=self._logger)
+        self._sat_model = BasicSatModel(instance, solver=solver, logger=self._logger)
         self.witnesses = []
         self._num_prohibited_pairs = 0
         self._stats = []
