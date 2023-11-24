@@ -5,10 +5,11 @@ from pyvispoly import PolygonWithHoles, Point
 
 
 class WitnessStrategy:
-    def __init__(self, instance: Instance, guard_coverage: GuardCoverage) -> None:
+    def __init__(self, instance: Instance, guard_coverage: GuardCoverage, lazy=True) -> None:
         self.instance = instance
         self.guard_coverage = guard_coverage
         self.witnesses = []
+        self.lazy = lazy
 
     def get_witnesses_for_area(
         self, area: PolygonWithHoles
@@ -53,5 +54,7 @@ class WitnessStrategy:
         return witnesses
 
     def __call__(self, guards: typing.List[int]) -> typing.List[typing.List[int]]:
+        if not self.lazy:
+            return []
         witnesses = self.get_witnesses_for_guard_set(guards)
         return [w[1] for w in witnesses]
