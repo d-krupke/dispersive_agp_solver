@@ -6,13 +6,15 @@ can be computed purely by connecting all vertices that can view each other and t
 computing the shortest path between the two points in the resulting graph.
 """
 
+import itertools
 import math
 import typing
 
 import networkx as nx
 
-from .instance import Instance
 from .guard_coverage import GuardCoverage
+from .instance import Instance
+
 
 class GuardDistances:
     def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]) -> None:
@@ -39,9 +41,10 @@ class GuardDistances:
         """
         if not self._apsp is not None:
             self._apsp = dict(nx.all_pairs_dijkstra_path_length(self._graph, weight="weight"))
+            guards = list(range(self._graph.number_of_nodes()))
             self._sorted_distances = [
-                ((i, j), dist)
-                for i, j, dist in self._graph.edges(data="weight")
+                ((i, j), self._apsp[i][j])
+                for i, j in itertools.combinations(guards, 2)
             ]
             self._sorted_distances.sort(key=lambda x: x[1])
 
@@ -56,6 +59,31 @@ class GuardDistances:
                 return dist
         return math.inf
     
+    def get_next_lower_distance(self, d: float) -> float:
+        """
+        Get the next lower distance.
+        """
+        self.compute_all_distances()
+        assert self._sorted_distances is not None
+        for (i, j), dist in reversed(self._sorted_distances):
+            if dist < d:
+                return dist
+        return 0.0
+    
+    def min_distance_of_guards(self, guards: typing.List[int]) -> float:
+        """
+        Compute the minimum distance of the given guards.
+        """
+        self.compute_all_distances()
+        assert self._apsp is not None
+        if not guards:
+            raise ValueError("Empty list of guards.")
+        if len(guards) ==1:
+            return math.inf
+        return min(
+            self._apsp[i][j]
+            for i, j in itertools.combinations(guards, 2)
+        )
 
     def distance(self, i: int, j: int) -> float:
         if self._apsp:

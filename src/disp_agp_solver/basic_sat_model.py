@@ -41,6 +41,8 @@ class BasicSatModel:
         """
         Return a list of indices of guards that should be selected.
         """
+        if self._num_coverage_constraints == 0:
+            raise RuntimeError("No coverage constraints added.")
         self._logger.info("Solving SAT-formula with timelimit %f.", timelimit)
         if timelimit <= 0:
             msg = "timelimit must be positive"

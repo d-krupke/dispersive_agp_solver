@@ -2,6 +2,7 @@ import itertools
 import logging
 import math
 import typing
+from enum import Enum
 
 from .basic_sat_model import BasicSatModel
 from .guard_distances import GuardDistances
@@ -9,7 +10,14 @@ from .instance import Instance
 from .timer import Timer
 
 
+class SearchStrategy(Enum):
+        UP = 0
+        DOWN = 1
+        BINARY = 2
+
 class DistanceOptimizer:
+
+
     def __init__(
         self,
         instance: Instance,
@@ -20,11 +28,15 @@ class DistanceOptimizer:
         self.instance = instance
         self.objective = 0.0
         self.upper_bound = math.inf
-        self._sat_model = BasicSatModel(instance, logger=logger)
+        self._sat_model = BasicSatModel(instance, logger=logger.getChild('BasicSatModel'))
         self._guard_distances = guard_distances
         self._coverage_constraints = []
         self.solution = list(range(instance.num_positions()))  # trivial solution
         self._k = 0.0
+
+    def add_upper_bound(self, upper_bound: float) -> None:
+        self.upper_bound = min(self.upper_bound, upper_bound)
+        assert self.objective <= self.upper_bound, f"{self.objective} <= {self.upper_bound}"
 
     def _solve_for_k(self, k: float, timer: Timer) -> bool:
         if self._k > k:
@@ -46,8 +58,18 @@ class DistanceOptimizer:
         self._logger.info("Prohibited %d guard pairs.", num_prohibited_pairs)
         return self._sat_model.solve(timer.remaining())
 
-    def _select_next_k(self) -> float:
-        return self._guard_distances.get_next_higher_distance(self._k)
+    def _select_next_k(self, search_strategy: SearchStrategy) -> float:
+        if search_strategy == SearchStrategy.UP:
+            k  = self._guard_distances.get_next_higher_distance(self.objective)
+        elif search_strategy == SearchStrategy.DOWN:
+            k = self._guard_distances.get_next_lower_distance(self.upper_bound)
+            k = max(k, self._guard_distances.get_next_higher_distance(self.objective))
+        else:
+            assert search_strategy == SearchStrategy.BINARY
+            k = (self.objective + self.upper_bound) / 2
+            k = max(k, self._guard_distances.get_next_higher_distance(self.objective))
+        k = min(k, self.upper_bound)
+        return k
 
     def _solve_for_k_with_callback(
         self,
@@ -78,24 +100,30 @@ class DistanceOptimizer:
     def solve(
         self,
         timelimit: float = 900,
+        search_strategy: SearchStrategy = SearchStrategy.BINARY,
         callback: typing.Optional[
             typing.Callable[[typing.List[int]], typing.List[typing.List[int]]]
         ] = None,
+        timer: typing.Optional[Timer] = None,
     ) -> bool:
         if not callback:
             callback = lambda _: []  # noqa: E731
-        timer = Timer(timelimit)
+        timer = timer if timer is not None else Timer(timelimit)
         while self.objective < self.upper_bound:
             timer.check()
-            k = self._select_next_k()  # next value to try
-            assert self.objective < k < self.upper_bound or k == math.inf
+            k = self._select_next_k(search_strategy)  # next value to try
+            assert self.objective < k <= self.upper_bound, f"{self.objective} < {k} <= {self.upper_bound}"
             feasible = self._solve_for_k_with_callback(k, timer, callback)
             if not feasible:
                 self._logger.info("No solution found for k=%f.", k)
-                self._upper_bound = min(self._upper_bound, k)
+                next_lower_dist = self._guard_distances.get_next_lower_distance(k)
+                self._logger.info("Next lower distance of k=%f: %f.", k, next_lower_dist)
+                self.add_upper_bound(next_lower_dist)
+                self._logger.info("Upper bound reduced to %f.", self.upper_bound)
                 continue
             # if we got this far, we have a solution
             self._logger.info("Solution found for k=%f.", k)
-            self.objective = k
             self.solution = self._sat_model.get_solution()
+            self.objective = self._guard_distances.min_distance_of_guards(self.solution)
+            self._logger.info("Objective: %f/ Upper Bound: %f", self.objective, self.upper_bound)
         return True
