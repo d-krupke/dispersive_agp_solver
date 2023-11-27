@@ -1,21 +1,31 @@
-import typing
 import logging
+import typing
+
 import pyvispoly
 
-from .instance import Instance
 from .basic_sat_model import BasicSatModel
-from .timer import Timer
 from .guard_coverage import GuardCoverage
+from .instance import Instance
+from .timer import Timer
+
 
 class SatModelWithFullCoverage:
-    def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage] = None, solver: str = "Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(
+        self,
+        instance: Instance,
+        guard_coverage: typing.Optional[GuardCoverage] = None,
+        solver: str = "Glucose4",
+        logger: typing.Optional[logging.Logger] = None,
+    ) -> None:
         self.instance = instance
         if logger is None:
             self._logger = logging.getLogger("DispAgpFullCoverageSolver")
         else:
             self._logger = logger
         self._logger.info("Building basic full coverage model...")
-        self._guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
+        self._guard_coverage = (
+            guard_coverage if guard_coverage else GuardCoverage(instance)
+        )
         self._sat_model = BasicSatModel(instance, solver=solver, logger=self._logger)
         self.witnesses = []
         self._num_prohibited_pairs = 0
@@ -30,7 +40,9 @@ class SatModelWithFullCoverage:
             self.witnesses.append((self.instance.as_cgal_position(v), guards))
             self._sat_model.add_coverage_constraint(guards)
 
-    def _get_guards_for_witness_visibility(self, visibility_poly: pyvispoly.Polygon) -> typing.List[int]:
+    def _get_guards_for_witness_visibility(
+        self, visibility_poly: pyvispoly.Polygon
+    ) -> typing.List[int]:
         """
         Compute which vertex guard can see the given witness.
         """
@@ -41,7 +53,6 @@ class SatModelWithFullCoverage:
         ]
         assert guards, "Should not be empty."
         return guards
-
 
     def _add_witnesses_to_area(
         self, poly: pyvispoly.PolygonWithHoles
@@ -57,17 +68,21 @@ class SatModelWithFullCoverage:
             self._sat_model.add_coverage_constraint(guards)
         assert witnesses, "Should not be empty."
         return witnesses
-    
+
     def _log_statistics(self, guards, feasible, time, missing_areas):
-        self._stats.append({
-            "num_guards": len(guards) if guards else None,
-            "num_witnesses": len(self.witnesses) if guards is not None else 0,
-            "num_prohibited_pairs": self._num_prohibited_pairs,
-            "feasible": feasible,
-            "sat_stats": self._sat_model.get_statistics(),
-            "remaining_time": time,
-            "num_missing_areas": len(missing_areas) if missing_areas is not None else 0,
-        })
+        self._stats.append(
+            {
+                "num_guards": len(guards) if guards else None,
+                "num_witnesses": len(self.witnesses) if guards is not None else 0,
+                "num_prohibited_pairs": self._num_prohibited_pairs,
+                "feasible": feasible,
+                "sat_stats": self._sat_model.get_statistics(),
+                "remaining_time": time,
+                "num_missing_areas": len(missing_areas)
+                if missing_areas is not None
+                else 0,
+            }
+        )
 
     def get_statistics(self):
         return list(self._stats)
@@ -92,7 +107,7 @@ class SatModelWithFullCoverage:
             self._logger.info("Adding witnesses to missing areas...")
             for missing_area in missing_areas:
                 witnesses += self._add_witnesses_to_area(missing_area)
-                assert not set(witnesses[-1][1])&set(guards), "Redundant witness."
+                assert not set(witnesses[-1][1]) & set(guards), "Redundant witness."
             if on_iteration is not None:
                 on_iteration(guards, witnesses, missing_areas)
             feasible = self._sat_model.solve(timer.remaining())

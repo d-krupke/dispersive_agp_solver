@@ -1,9 +1,11 @@
+import functools
+import lzma
+import tempfile
 from pathlib import Path
+
 import networkx as nx
 import requests
-import tempfile
-import lzma
-import functools
+
 from disp_agp_solver.instance import Instance, Position
 
 # Data mapping instances names to urls
@@ -45,7 +47,10 @@ def _vertex_to_position(graph, vertex) -> Position:
 
 def graph_to_list(graph: nx.Graph):
     components = [
-        [_vertex_to_position(graph, v) for v in nx.dfs_preorder_nodes(graph, source=list(comp)[0])]
+        [
+            _vertex_to_position(graph, v)
+            for v in nx.dfs_preorder_nodes(graph, source=list(comp)[0])
+        ]
         for comp in nx.connected_components(graph)
     ]
     if len(components) == 1:

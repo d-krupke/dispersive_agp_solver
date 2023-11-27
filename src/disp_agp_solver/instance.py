@@ -34,15 +34,17 @@ class Instance:
 
     def as_cgal_polygon(self) -> PolygonWithHoles:
         boundary = Polygon([self.as_cgal_position(i) for i in self.boundary])
-        if float(boundary.area())<=0:
-            print("Warning: Polygon is not oriented counter-clockwise. Reversing boundary.")
+        if float(boundary.area()) <= 0:
+            print(
+                "Warning: Polygon is not oriented counter-clockwise. Reversing boundary."
+            )
             self.boundary = self.boundary[::-1]
             boundary = Polygon([self.as_cgal_position(i) for i in self.boundary])
         holes = [
             Polygon([self.as_cgal_position(i) for i in hole]) for hole in self.holes
         ]
         for i, hole in enumerate(self.holes):
-            if float(holes[i].area())>=0:
+            if float(holes[i].area()) >= 0:
                 print(f"Warning: Hole {i} is not oriented clockwise. Reversing hole.")
                 hole = hole[::-1]
                 self.holes[i] = hole

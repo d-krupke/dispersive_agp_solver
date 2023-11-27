@@ -4,13 +4,13 @@ The used SAT-formula is in a separate file.
 """
 
 import itertools
-import typing
-from typing import Any
 import logging
+import typing
+
 import pyvispoly
 
-from .guard_distances import GuardDistances
 from .guard_coverage import GuardCoverage
+from .guard_distances import GuardDistances
 from .instance import Instance
 from .sat_model_full_coverage import SatModelWithFullCoverage
 from .timer import Timer
@@ -49,7 +49,12 @@ class DispAgpSolver:
 
     """
 
-    def __init__(self, instance: Instance, solver: str="Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(
+        self,
+        instance: Instance,
+        solver: str = "Glucose4",
+        logger: typing.Optional[logging.Logger] = None,
+    ) -> None:
         if logger is None:
             self._logger = logging.getLogger("DispAgpSolver")
         else:
@@ -58,7 +63,9 @@ class DispAgpSolver:
         n = instance.num_positions()
         self._logger.info("Building basic model...")
         guard_coverage = GuardCoverage(instance)
-        self._sat_model = SatModelWithFullCoverage(instance, guard_coverage=guard_coverage, solver=solver, logger=self._logger)
+        self._sat_model = SatModelWithFullCoverage(
+            instance, guard_coverage=guard_coverage, solver=solver, logger=self._logger
+        )
         self._sat_model.add_witnesses_at_vertices()
         self.guards = list(range(n))
         self._logger.info("Setting up geodesic distances...")
@@ -98,16 +105,17 @@ class DispAgpSolver:
         self,
     ) -> typing.List[typing.Tuple[pyvispoly.Point, typing.List[int]]]:
         return self._sat_model.witnesses
-    
 
     def _log_statistics(self, guards, objective, feasible, time):
-        self._stats.append({
-            "num_guards": len(guards) if guards is not None else 0,
-            "objective": objective,
-            "feasible": feasible,
-            "sat_stats": self._sat_model.get_statistics(),
-            "time": time,
-        })
+        self._stats.append(
+            {
+                "num_guards": len(guards) if guards is not None else 0,
+                "objective": objective,
+                "feasible": feasible,
+                "sat_stats": self._sat_model.get_statistics(),
+                "time": time,
+            }
+        )
 
     def get_statistics(self):
         return list(self._stats)
@@ -140,5 +148,7 @@ class DispAgpSolver:
                 timelimit=timer.time(),
                 on_iteration=self.observer.on_coverage_iteration,
             )
-            self._log_statistics(self.guards, self.objective, feasible, timer.remaining())
+            self._log_statistics(
+                self.guards, self.objective, feasible, timer.remaining()
+            )
         return self.guards

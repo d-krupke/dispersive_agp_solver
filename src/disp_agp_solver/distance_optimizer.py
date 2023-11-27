@@ -11,13 +11,12 @@ from .timer import Timer
 
 
 class SearchStrategy(Enum):
-        UP = 0
-        DOWN = 1
-        BINARY = 2
+    UP = 0
+    DOWN = 1
+    BINARY = 2
+
 
 class DistanceOptimizer:
-
-
     def __init__(
         self,
         instance: Instance,
@@ -28,7 +27,9 @@ class DistanceOptimizer:
         self.instance = instance
         self.objective = 0.0
         self.upper_bound = math.inf
-        self._sat_model = BasicSatModel(instance, logger=logger.getChild('BasicSatModel'))
+        self._sat_model = BasicSatModel(
+            instance, logger=logger.getChild("BasicSatModel")
+        )
         self._guard_distances = guard_distances
         self._coverage_constraints = []
         self.solution = list(range(instance.num_positions()))  # trivial solution
@@ -36,7 +37,9 @@ class DistanceOptimizer:
 
     def add_upper_bound(self, upper_bound: float) -> None:
         self.upper_bound = min(self.upper_bound, upper_bound)
-        assert self.objective <= self.upper_bound, f"{self.objective} <= {self.upper_bound}"
+        assert (
+            self.objective <= self.upper_bound
+        ), f"{self.objective} <= {self.upper_bound}"
 
     def _solve_for_k(self, k: float, timer: Timer) -> bool:
         if self._k > k:
@@ -60,7 +63,7 @@ class DistanceOptimizer:
 
     def _select_next_k(self, search_strategy: SearchStrategy) -> float:
         if search_strategy == SearchStrategy.UP:
-            k  = self._guard_distances.get_next_higher_distance(self.objective)
+            k = self._guard_distances.get_next_higher_distance(self.objective)
         elif search_strategy == SearchStrategy.DOWN:
             k = self._guard_distances.get_next_lower_distance(self.upper_bound)
             k = max(k, self._guard_distances.get_next_higher_distance(self.objective))
@@ -112,12 +115,16 @@ class DistanceOptimizer:
         while self.objective < self.upper_bound:
             timer.check()
             k = self._select_next_k(search_strategy)  # next value to try
-            assert self.objective < k <= self.upper_bound, f"{self.objective} < {k} <= {self.upper_bound}"
+            assert (
+                self.objective < k <= self.upper_bound
+            ), f"{self.objective} < {k} <= {self.upper_bound}"
             feasible = self._solve_for_k_with_callback(k, timer, callback)
             if not feasible:
                 self._logger.info("No solution found for k=%f.", k)
                 next_lower_dist = self._guard_distances.get_next_lower_distance(k)
-                self._logger.info("Next lower distance of k=%f: %f.", k, next_lower_dist)
+                self._logger.info(
+                    "Next lower distance of k=%f: %f.", k, next_lower_dist
+                )
                 self.add_upper_bound(next_lower_dist)
                 self._logger.info("Upper bound reduced to %f.", self.upper_bound)
                 continue
@@ -125,5 +132,7 @@ class DistanceOptimizer:
             self._logger.info("Solution found for k=%f.", k)
             self.solution = self._sat_model.get_solution()
             self.objective = self._guard_distances.min_distance_of_guards(self.solution)
-            self._logger.info("Objective: %f/ Upper Bound: %f", self.objective, self.upper_bound)
+            self._logger.info(
+                "Objective: %f/ Upper Bound: %f", self.objective, self.upper_bound
+            )
         return True

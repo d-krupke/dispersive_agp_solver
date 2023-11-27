@@ -17,7 +17,9 @@ from .instance import Instance
 
 
 class GuardDistances:
-    def __init__(self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]) -> None:
+    def __init__(
+        self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]
+    ) -> None:
         guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
         self._graph = nx.Graph()
         self._graph.add_nodes_from(range(instance.num_positions()))
@@ -34,17 +36,18 @@ class GuardDistances:
             raise ValueError(msg)
         self._apsp = None
         self._sorted_distances = None
-        
+
     def compute_all_distances(self) -> None:
         """
         Compute all distances.
         """
         if not self._apsp is not None:
-            self._apsp = dict(nx.all_pairs_dijkstra_path_length(self._graph, weight="weight"))
+            self._apsp = dict(
+                nx.all_pairs_dijkstra_path_length(self._graph, weight="weight")
+            )
             guards = list(range(self._graph.number_of_nodes()))
             self._sorted_distances = [
-                ((i, j), self._apsp[i][j])
-                for i, j in itertools.combinations(guards, 2)
+                ((i, j), self._apsp[i][j]) for i, j in itertools.combinations(guards, 2)
             ]
             self._sorted_distances.sort(key=lambda x: x[1])
 
@@ -54,22 +57,22 @@ class GuardDistances:
         """
         self.compute_all_distances()
         assert self._sorted_distances is not None
-        for (i, j), dist in self._sorted_distances:
+        for (_i, _j), dist in self._sorted_distances:
             if dist > d:
                 return dist
         return math.inf
-    
+
     def get_next_lower_distance(self, d: float) -> float:
         """
         Get the next lower distance.
         """
         self.compute_all_distances()
         assert self._sorted_distances is not None
-        for (i, j), dist in reversed(self._sorted_distances):
+        for (_i, _j), dist in reversed(self._sorted_distances):
             if dist < d:
                 return dist
         return 0.0
-    
+
     def min_distance_of_guards(self, guards: typing.List[int]) -> float:
         """
         Compute the minimum distance of the given guards.
@@ -77,13 +80,11 @@ class GuardDistances:
         self.compute_all_distances()
         assert self._apsp is not None
         if not guards:
-            raise ValueError("Empty list of guards.")
-        if len(guards) ==1:
+            msg = "Empty list of guards."
+            raise ValueError(msg)
+        if len(guards) == 1:
             return math.inf
-        return min(
-            self._apsp[i][j]
-            for i, j in itertools.combinations(guards, 2)
-        )
+        return min(self._apsp[i][j] for i, j in itertools.combinations(guards, 2))
 
     def distance(self, i: int, j: int) -> float:
         if self._apsp:
