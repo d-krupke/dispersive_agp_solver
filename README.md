@@ -96,6 +96,10 @@ $$\begin{aligned}
 & \ell \in \mathbb{R}
 \end{aligned} $$
 
+This model can be solved by a MIP solver such as Gurobi or CPLEX.
+However, the performance can be poor if not tight $M$ is known.
+Additionally, if the polygon can be guarded from a single vertex, the tight upper bound is infinity, which is not allowed in MIP solvers.
+This case can easily be detected by computing the visibility polygons for each vertex.
 
 ### SAT-Model
 
@@ -110,12 +114,15 @@ Another question is if we directly want to add witnesses to any solution, or onl
 Computing the coverage of a guard set is possible in polynomial time, but it is still a geometric operation that can be expensive as it requires precise arithmetics.
 Thus, we may want to avoid it as much as possible.
 
+Building a formula that decides the existence of a solution with objective value at least $\ell$ that covers the given witnesses $\mathcal{W}$ is relatively easy and can be done as follows:
+
+**Decide($\ell, \mathcal{W}$):**
+$$\bigwedge_{w \in \mathcal{W}} \left(\bigvee_{g \in V(\mathcal{P}), \text{LoS}_{\mathcal{P}}(w,g)} x_g\right) \wedge \bigwedge_{g, g' \in V(\mathcal{P}), \text{dist}(g, g') \leq \ell} \left(\neg x_{g} \vee \neg x_{g'}\right)$$
+
+Note that increasing $\ell$ or $\mathcal{W}$ can be done incrementally by adding new clauses to the formula,
+allowing the SAT-solver to maintain, e.g., learned clauses, and potentially speeding up the solving process.
 
 
-$$ \begin{aligned}
-\vee_{g \in V(P), \text{visible}(w,g)} x_g \quad & \forall w \in P\\
-\neg x_{g_1} \vee \neg x_{g_2} \quad & \forall g_1, g_2 \in V(P), \text{dist}(g_1, g_2) \leq \ell\\
-\end{aligned} $$
 
 ## Algorithm
 

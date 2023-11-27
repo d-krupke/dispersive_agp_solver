@@ -20,8 +20,8 @@ Dominik Krupke, 2023, Braunschweig
 
 from .instance import Instance
 from .optimizer import SatBasedOptimizer
-from .sat_solver import DispAgpSolver, DispAgpSolverObserver
 from .plotting import Plotter
 from .params import OptimizerParams, SearchStrategy
+from .cpsat import CpSatOptimizer
 
-__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy"]
+__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy", "CpSatOptimizer"]

@@ -135,4 +135,9 @@ class DistanceOptimizer:
             self._logger.info(
                 "Objective: %f/ Upper Bound: %f", self.objective, self.upper_bound
             )
+        if self.objective == math.inf:
+            feasible = self._solve_for_k_with_callback(math.inf, timer, callback)
+            assert feasible
+            self.solution = self._sat_model.get_solution()
+            self.objective = self._guard_distances.min_distance_of_guards(self.solution)
         return True
