@@ -1,15 +1,20 @@
-from .instance import Instance
-from .guard_coverage import GuardCoverage
 import typing
-from pyvispoly import PolygonWithHoles, Point
+
+from pyvispoly import Point, PolygonWithHoles
+
+from .guard_coverage import GuardCoverage
+from .instance import Instance
+from .params import OptimizerParams
 
 
 class WitnessStrategy:
-    def __init__(self, instance: Instance, guard_coverage: GuardCoverage, lazy=True) -> None:
+    def __init__(
+        self, instance: Instance, guard_coverage: GuardCoverage, params: OptimizerParams
+    ) -> None:
         self.instance = instance
         self.guard_coverage = guard_coverage
         self.witnesses = []
-        self.lazy = lazy
+        self.params = params
 
     def get_witnesses_for_area(
         self, area: PolygonWithHoles
@@ -27,10 +32,14 @@ class WitnessStrategy:
 
     def get_initial_witnesses(
         self,
-    ) -> typing.List[typing.Tuple[Point, typing.List[int]]]:
+    ) -> typing.List[typing.Tuple[typing.Optional[Point], typing.List[int]]]:
         """
         Add witnesses to the given polygon.
         """
+        if not self.params.add_all_vertices_as_witnesses:
+            trivial_constraint = list(range(self.instance.num_positions()))
+            self.witnesses += trivial_constraint
+            return [(None, trivial_constraint)]
         witnesses = []
         for v in range(self.instance.num_positions()):
             visibility = self.guard_coverage.get_visibility_of_guard(v)
@@ -54,7 +63,7 @@ class WitnessStrategy:
         return witnesses
 
     def __call__(self, guards: typing.List[int]) -> typing.List[typing.List[int]]:
-        if not self.lazy:
+        if not self.params.lazy:
             return []
         witnesses = self.get_witnesses_for_guard_set(guards)
         return [w[1] for w in witnesses]

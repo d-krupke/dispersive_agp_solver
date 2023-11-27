@@ -1,7 +1,10 @@
-from .instance import Instance
 import matplotlib.pyplot as plt
 from pyvispoly import plot_polygon
+
 from .guard_coverage import GuardCoverage
+from .instance import Instance
+
+
 class Plotter:
     def __init__(self, instance: Instance):
         self.instance = instance
@@ -13,7 +16,7 @@ class Plotter:
         plot_polygon(self.instance.as_cgal_polygon(), color="lightblue", ax=ax)
         ax.set_aspect("equal")
         return ax
-    
+
     def plot_witnesses(self, witnesses, ax=None):
         if ax is None:
             fig, ax = plt.subplots()
@@ -27,8 +30,8 @@ class Plotter:
                 )
             ax.plot([float(witness.x())], [float(witness.y())], "x", color="darkred")
         return ax
-    
-    def plot_guards(self, guards, highlighted_guards= None, ax=None):
+
+    def plot_guards(self, guards, highlighted_guards=None, ax=None):
         if ax is None:
             fig, ax = plt.subplots()
         highlighted_guards = highlighted_guards if highlighted_guards else []
@@ -48,7 +51,7 @@ class Plotter:
                     color="darkgreen",
                 )
         return ax
-    
+
     def plot_solution_with_coverage(self, guards, witness_positions, ax=None):
         if ax is None:
             fig, ax = plt.subplots()
@@ -57,10 +60,17 @@ class Plotter:
         for area in uncovered_areas:
             plot_polygon(area, color="red", ax=ax, alpha=0.3)
         self.plot_guards(guards, None, ax=ax)
-        ax.plot([w.x() for w in witness_positions], [w.y() for w in witness_positions], "x", color="grey")
+        ax.plot(
+            [w.x() for w in witness_positions],
+            [w.y() for w in witness_positions],
+            "x",
+            color="grey",
+        )
         return ax
-    
-    def plot_solution_with_coverage_and_new_witnesses(self, guards, witness_positions, new_witnesses, ax=None):
+
+    def plot_solution_with_coverage_and_new_witnesses(
+        self, guards, witness_positions, new_witnesses, ax=None
+    ):
         if ax is None:
             fig, ax = plt.subplots()
         self.plot_instance(ax)
@@ -68,7 +78,12 @@ class Plotter:
         for area in uncovered_areas:
             plot_polygon(area, color="red", ax=ax, alpha=0.3)
         self.plot_guards(guards, None, ax=ax)
-        ax.plot([w.x() for w in witness_positions], [w.y() for w in witness_positions], "x", color="grey")
+        ax.plot(
+            [w.x() for w in witness_positions],
+            [w.y() for w in witness_positions],
+            "x",
+            color="grey",
+        )
         self.plot_witnesses(new_witnesses, ax=ax)
         return ax
 
@@ -77,5 +92,9 @@ class Plotter:
             fig, ax = plt.subplots()
         self.plot_instance(ax)
         self.plot_guards(guards, None, ax=ax)
-        ax.plot([w.x() for w in witness_positions], [w.y() for w in witness_positions], "x", color="grey")
-
+        ax.plot(
+            [w.x() for w in witness_positions],
+            [w.y() for w in witness_positions],
+            "x",
+            color="grey",
+        )

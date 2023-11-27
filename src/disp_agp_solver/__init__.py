@@ -19,7 +19,9 @@ Dominik Krupke, 2023, Braunschweig
 """
 
 from .instance import Instance
-from .sat_solver import DispAgpSolver, DispAgpSolverObserver
 from .optimizer import SatBasedOptimizer
+from .sat_solver import DispAgpSolver, DispAgpSolverObserver
+from .plotting import Plotter
+from .params import OptimizerParams, SearchStrategy
 
-__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer"]
+__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy"]

@@ -1,13 +1,19 @@
+import logging
 import typing
 from threading import Timer
-import logging
+
 from pysat.solvers import Solver
 
 from .instance import Instance
 
 
 class BasicSatModel:
-    def __init__(self, instance: Instance, solver: str = "Glucose4", logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(
+        self,
+        instance: Instance,
+        solver: str = "Glucose4",
+        logger: typing.Optional[logging.Logger] = None,
+    ) -> None:
         if logger is None:
             self._logger = logging.getLogger("DispAgpSatModel")
         else:
@@ -42,7 +48,8 @@ class BasicSatModel:
         Return a list of indices of guards that should be selected.
         """
         if self._num_coverage_constraints == 0:
-            raise RuntimeError("No coverage constraints added.")
+            msg = "No coverage constraints added."
+            raise RuntimeError(msg)
         self._logger.info("Solving SAT-formula with timelimit %f.", timelimit)
         if timelimit <= 0:
             msg = "timelimit must be positive"
@@ -74,13 +81,15 @@ class BasicSatModel:
             msg = "No solution available"
             raise RuntimeError(msg)
         return [i - 1 for i in self._model if i > 0]
-    
+
     def get_statistics(self):
-        stats =  self._sat_solver.accum_stats().copy()
-        stats.update({
-            "num_coverage_constraints": self._num_coverage_constraints,
-            "num_prohibited_guards": self._num_prohibited_guards,
-        })
+        stats = self._sat_solver.accum_stats().copy()
+        stats.update(
+            {
+                "num_coverage_constraints": self._num_coverage_constraints,
+                "num_prohibited_guards": self._num_prohibited_guards,
+            }
+        )
         return stats
 
     def __del__(self):
