@@ -23,5 +23,6 @@ from .optimizer import SatBasedOptimizer
 from .plotting import Plotter
 from .params import OptimizerParams, SearchStrategy
 from .cpsat import CpSatOptimizer
+from .gurobi import GurobiSolver
 
-__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy", "CpSatOptimizer"]
+__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy", "CpSatOptimizer", "GurobiSolver"]

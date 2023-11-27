@@ -74,6 +74,7 @@ class _CpSatModel:
     def solve(self, timer: Timer) -> typing.Tuple[float, typing.List[int]]:
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = timer.remaining()
+        solver.parameters.log_search_progress = True
         status = solver.Solve(self.model)
         self.upper_bound = min(
             self.upper_bound, solver.ObjectiveValue() / self.scaling_factor
@@ -83,7 +84,7 @@ class _CpSatModel:
             if len(solution) == 1:
                 return math.inf, solution
             return solver.ObjectiveValue() / self.scaling_factor, solution
-        elif status == cp_model.FEASIBLE:
+        elif status == cp_model.FEASIBLE or status == cp_model.UNKNOWN:
             raise TimeoutError()
         raise ValueError(f"Unexpected status {status}")
 
