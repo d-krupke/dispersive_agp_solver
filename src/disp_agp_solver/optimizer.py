@@ -134,6 +134,7 @@ class SatBasedOptimizer:
             self.solution = solution
             self.objective = obj
             self._logger.info("Found solution with objective %f", self.objective)
+            return SatBasedOptimizer.Status.OPTIMAL
         except TimeoutError:
             self._logger.info("Timelimit reached.")
             if self.objective == self.upper_bound:

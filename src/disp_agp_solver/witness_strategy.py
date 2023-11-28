@@ -1,3 +1,7 @@
+"""
+This file implements the witness strategy for the dispersion AGP solver.
+It can be used for different approaches.
+"""
 import typing
 
 from pyvispoly import Point, PolygonWithHoles

@@ -85,6 +85,14 @@ class GuardDistances:
         if len(guards) == 1:
             return math.inf
         return min(self._apsp[i][j] for i, j in itertools.combinations(guards, 2))
+    
+    def max(self) -> float:
+        """
+        Compute the maximum distance.
+        """
+        self.compute_all_distances()
+        assert self._sorted_distances is not None
+        return self._sorted_distances[-1][1]
 
     def distance(self, i: int, j: int) -> float:
         if self._apsp:
