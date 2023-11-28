@@ -15,6 +15,11 @@ class WitnessStrategy:
         self.guard_coverage = guard_coverage
         self.witnesses = []
         self.params = params
+        self._stats = {
+            "num_initial_witnesses": 0,
+            "num_area_calls": 0,
+            "num_guard_set_calls": 0,
+        }
 
     def get_witnesses_for_area(
         self, area: PolygonWithHoles
@@ -22,6 +27,7 @@ class WitnessStrategy:
         """
         Add witnesses to the given polygon.
         """
+        self._stats["num_area_calls"] += 1
         witnesses = []
         for witness in area.interior_sample_points():
             guards = self.guard_coverage.compute_guards_for_witness(witness)
@@ -47,6 +53,7 @@ class WitnessStrategy:
             witnesses.append((self.instance.as_cgal_position(v), guards))
         assert witnesses, "Should not be empty."
         self.witnesses += witnesses
+        self._stats["num_initial_witnesses"] += len(witnesses)
         return witnesses
 
     def get_witnesses_for_guard_set(
@@ -55,12 +62,20 @@ class WitnessStrategy:
         """
         Add witnesses to the given polygon.
         """
+        self._stats["num_guard_set_calls"] += 1
         witnesses = []
         missing_areas = self.guard_coverage.compute_uncovered_area(guards)
         for area in missing_areas:
             witnesses += self.get_witnesses_for_area(area)
         assert witnesses or not missing_areas, "Should not be empty."
         return witnesses
+    
+    def get_stats(self) -> typing.Dict[str, typing.Any]:
+        stats  = {
+            "num_witnesses": len(self.witnesses),
+        }
+        stats.update(self._stats)
+        return stats
 
     def __call__(self, guards: typing.List[int]) -> typing.List[typing.List[int]]:
         if not self.params.lazy:
