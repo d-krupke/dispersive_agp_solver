@@ -110,7 +110,7 @@ class DistanceOptimizer:
         return abs(self.objective - self.upper_bound) / self.objective
 
     def get_stats(self) -> typing.Dict[str, typing.Any]:
-        stats = self._stats.copy()
+        stats: dict = self._stats.copy()
         stats["solver"] = self._sat_model.get_stats()
         return stats
 

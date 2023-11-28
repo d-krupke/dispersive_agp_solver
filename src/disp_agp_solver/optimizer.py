@@ -15,6 +15,7 @@ from .witness_strategy import WitnessStrategy
 
 
 class OptimizerObserver:
+    # TODO: Not yet used/implemented
     def on_coverage_iteration(
         self,
         guards: typing.List[int],
@@ -132,7 +133,7 @@ class SatBasedOptimizer:
         return (self.upper_bound - self.objective) / self.objective
 
     def get_stats(self) -> typing.Dict[str, typing.Any]:
-        stats = self._stats.copy()
+        stats: dict = self._stats.copy()
         stats["witness_stats"] = self._witness_strategy.get_stats()
         return stats
 

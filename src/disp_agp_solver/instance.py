@@ -42,7 +42,7 @@ class Instance:
         ]
         for i, hole in enumerate(self.holes):
             if float(holes[i].area()) >= 0:
-                hole = hole[::-1]
+                hole = hole[::-1]  # noqa: PLW2901
                 self.holes[i] = hole
                 holes[i] = Polygon([self.as_cgal_position(i) for i in hole])
         if float(boundary.area()) <= 0 or not boundary.is_simple():

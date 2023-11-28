@@ -4,10 +4,11 @@ It is not competitive with the SAT-based solver, and is only included for compar
 """
 
 import itertools
+import logging
 import math
 import typing
 from enum import Enum
-import logging
+
 import gurobipy as gp
 from gurobipy import GRB
 
@@ -42,7 +43,9 @@ class GurobiOptimizer:
         FEASIBLE = 1
         UNKNOWN = 2
 
-    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(
+        self, instance: Instance, logger: typing.Optional[logging.Logger] = None
+    ) -> None:
         self._logger = logger if logger else logging.getLogger("GurobiOptimizer")
         self._logger.info("Initializing GurobiOptimizer")
         self.instance = instance

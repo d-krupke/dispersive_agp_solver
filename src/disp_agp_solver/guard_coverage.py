@@ -51,12 +51,11 @@ class GuardCoverage:
         """
         Compute which vertex guard can see the given witness.
         """
-        guards = [
+        return [
             i
             for i in range(self._instance.num_positions())
             if poly.contains(self._instance.as_cgal_position(i))
         ]
-        return guards
 
     def compute_guards_for_witness(self, witness: Point) -> typing.List[int]:
         """

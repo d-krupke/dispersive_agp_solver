@@ -5,11 +5,11 @@ Using a SAT-solver directly, allows for a more efficient search strategy.
 """
 
 import itertools
+import logging
 import math
 import typing
 from enum import Enum
 from typing import Any
-import logging
 
 from ortools.sat.python import cp_model
 
@@ -46,7 +46,7 @@ class _VarMap:
         g, g_ = min(g, g_), max(g, g_)
         return self._combi_vars[(g, g_)]
 
-    def l(self) -> cp_model.IntVar:
+    def l(self) -> cp_model.IntVar:  # noqa: E743
         return self._l
 
     def get_guards(
@@ -63,7 +63,11 @@ class _CpSatModel:
     """
 
     def __init__(
-        self, instance: Instance, dists: GuardDistances, logger: logging.Logger, scaling_factor: int = 10_000
+        self,
+        instance: Instance,
+        dists: GuardDistances,
+        logger: logging.Logger,
+        scaling_factor: int = 10_000,
     ) -> None:
         self.logger = logger
         self.instance = instance
@@ -149,8 +153,12 @@ class CpSatOptimizer:
         FEASIBLE = 1
         UNKNOWN = 2
 
-    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None):
-        self._logger = logger if logger is not None else logging.getLogger("CpSatOptimizer")
+    def __init__(
+        self, instance: Instance, logger: typing.Optional[logging.Logger] = None
+    ):
+        self._logger = (
+            logger if logger is not None else logging.getLogger("CpSatOptimizer")
+        )
         self._logger.info("Initializing CP-SAT optimizer")
         self.instance = instance
         self._guard_coverage = GuardCoverage(instance)
