@@ -18,6 +18,8 @@ def fetch_as_nx(instance) -> nx.Graph:
     print("Downloading:", instance)
     with tempfile.TemporaryFile() as fp:
         data = requests.get(instance)
+        # throw error if download failed
+        data.raise_for_status()
         # Save file data to local copy
         fp.write(data.content)
         fp.seek(0)
@@ -49,7 +51,7 @@ def graph_to_list(graph: nx.Graph):
     components = [
         [
             _vertex_to_position(graph, v)
-            for v in nx.dfs_preorder_nodes(graph, source=list(comp)[0])
+            for v in nx.dfs_preorder_nodes(graph, source=next(iter(comp)))
         ]
         for comp in nx.connected_components(graph)
     ]

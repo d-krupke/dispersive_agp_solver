@@ -24,7 +24,7 @@ from .instance import Instance
 from .optimizer import SatBasedOptimizer
 from .params import OptimizerParams, SearchStrategy
 from .plotting import Plotter
-
+from .sgdb import SalzburgPolygonDataBase
 __all__ = [
     "Instance",
     "SatBasedOptimizer",
@@ -33,4 +33,5 @@ __all__ = [
     "SearchStrategy",
     "CpSatOptimizer",
     "GurobiOptimizer",
+    "SalzburgPolygonDataBase",
 ]

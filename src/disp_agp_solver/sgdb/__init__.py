@@ -1,3 +1,3 @@
-from .fetch import fetch
+from .db import SalzburgPolygonDataBase
 
-__all__ = ["fetch"]
+__all__ = ["SalzburgPolygonDataBase"]
