@@ -1,17 +1,31 @@
-from ortools.sat.python import cp_model
-import typing
+"""
+This class implements a dispersive AGP solver based on the CP-SAT solver from Google OR-Tools.
+It is not competitive with the SAT-based solver, despite CP-SAT using a SAT-solver internally.
+Using a SAT-solver directly, allows for a more efficient search strategy.
+"""
+
 import itertools
 import math
+import typing
 from enum import Enum
+from typing import Any
+
+from ortools.sat.python import cp_model
+
 from .guard_coverage import GuardCoverage
-from .instance import Instance
-from .witness_strategy import WitnessStrategy
 from .guard_distances import GuardDistances
+from .instance import Instance
 from .params import OptimizerParams
 from .timer import Timer
+from .witness_strategy import WitnessStrategy
 
 
 class _VarMap:
+    """
+    I like to create a dedicated container for the variables.
+    This comes in handy when building more complex models.
+    """
+
     def __init__(self, n: int, model: cp_model.CpModel, max_dist: int) -> None:
         self._model = model
         self._vars = [self._model.NewBoolVar(f"x_{i}") for i in range(n)]
@@ -41,18 +55,34 @@ class _VarMap:
 
 
 class _CpSatModel:
+    """
+    As we may have to do multiple solves, we create a dedicated class for the model.
+    Bugs in the mathematical model can be hard to detect, thus, the code needs to be
+    as simple as possible.
+    """
+
     def __init__(
         self, instance: Instance, dists: GuardDistances, scaling_factor: int = 10_000
     ) -> None:
         self.instance = instance
         self.model = cp_model.CpModel()
+        self.solver = cp_model.CpSolver()
         self.scaling_factor = scaling_factor
         self._vars = _VarMap(
-            instance.num_positions(), self.model, round(dists.max() * scaling_factor+1)
+            instance.num_positions(),
+            self.model,
+            round(dists.max() * scaling_factor + 1),
         )
         self._dists = dists
         self._build_objective()
         self.upper_bound = math.inf
+        self.solution = list(range(instance.num_positions()))
+        self.objective = 0
+        self._stats = {
+            "num_cpsat_solves": 0,
+            "num_witnesses": 0,
+            "solve_stats": [],
+        }
 
     def _build_objective(self):
         self.model.Maximize(self._vars.l())
@@ -66,27 +96,49 @@ class _CpSatModel:
             )
 
     def add_witness(self, guards: typing.List[int]):
+        self._stats["num_witnesses"] += 1
         self.model.AddBoolOr([self._vars.x(g) for g in guards])
 
     def add_upper_bound(self, d: float):
         self.model.Add(self._vars.l() <= round(d * self.scaling_factor))
 
-    def solve(self, timer: Timer) -> typing.Tuple[float, typing.List[int]]:
-        solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = timer.remaining()
-        solver.parameters.log_search_progress = True
-        status = solver.Solve(self.model)
+    def _update_solution(self, status, solver: cp_model.CpSolver):
         self.upper_bound = min(
             self.upper_bound, solver.ObjectiveValue() / self.scaling_factor
         )
-        if status == cp_model.OPTIMAL:
-            solution = self._vars.get_guards(lambda x: solver.Value(x))
-            if len(solution) == 1:
-                return math.inf, solution
-            return solver.ObjectiveValue() / self.scaling_factor, solution
-        elif status == cp_model.FEASIBLE or status == cp_model.UNKNOWN:
-            raise TimeoutError()
-        raise ValueError(f"Unexpected status {status}")
+        if status != cp_model.UNKNOWN:
+            assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+            self.solution = self._vars.get_guards(lambda x: solver.Value(x))
+            if len(self.solution) == 1:
+                self.objective = math.inf
+            else:
+                self.objective = solver.ObjectiveValue() / self.scaling_factor
+        else:
+            self.solution = list(range(self.instance.num_positions()))
+            self.objective = 0
+        self._stats["solve_stats"].append(
+            {
+                "CP-SAT": solver.ResponseStats(),
+                "upper_bound": self.upper_bound,
+                "objective": self.objective,
+                "num_witnesses": self._stats["num_witnesses"],
+            }
+        )
+
+    def solve(
+        self, timer: Timer, opt_tol: float
+    ) -> typing.Tuple[float, typing.List[int]]:
+        self._stats["num_cpsat_solves"] += 1
+        solver = self.solver
+        solver.parameters.max_time_in_seconds = timer.remaining()
+        solver.parameters.log_search_progress = True
+        solver.parameters.relative_gap_limit = opt_tol
+        status = solver.Solve(self.model)
+        self._update_solution(status, solver)
+        return self.objective, self.solution
+
+    def get_stats(self) -> dict[str, Any]:
+        return self._stats.copy()
 
 
 class CpSatOptimizer:
@@ -107,22 +159,30 @@ class CpSatOptimizer:
         self.upper_bound = math.inf
         self.objective = 0
 
-    def solve(self, time_limit: float):
+    def get_opt_gap(self) -> float:
+        """
+        Return the optimality gap, similar to the one defined by CP-SAT
+        """
+        return (self.upper_bound - self.objective) / self.objective
+
+    def solve(self, time_limit: float, opt_tol: float = 0.0001):
         try:
             timer = Timer(time_limit)
-            for witness, guards in self._witness_strategy.get_initial_witnesses():
+            for _, guards in self._witness_strategy.get_initial_witnesses():
                 self._model.add_witness(guards)
-            obj, solution = self._model.solve(timer)
+            obj, solution = self._model.solve(timer, opt_tol)
             self.upper_bound = obj
             new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(solution)
             while new_witnesses:
                 timer.check()
-                for witness, guards in new_witnesses:
+                for _, guards in new_witnesses:
                     self._model.add_witness(guards)
                 self._model.add_upper_bound(self.upper_bound)
-                obj, solution = self._model.solve(timer)
+                obj, solution = self._model.solve(timer, opt_tol)
                 self.upper_bound = obj
-                new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(solution)
+                new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(
+                    solution
+                )
             self.solution = solution
             if len(self.solution) == 1:
                 self.objective = math.inf
@@ -132,3 +192,8 @@ class CpSatOptimizer:
             if self.solution is not None:
                 return self.Status.FEASIBLE
         return self.Status.UNKNOWN
+
+    def get_stats(self) -> dict[str, Any]:
+        stats = self._model.get_stats()
+        stats.update(self._witness_strategy.get_stats())
+        return stats

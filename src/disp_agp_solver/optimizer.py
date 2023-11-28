@@ -24,9 +24,9 @@ class OptimizerObserver:
         pass
 
     def on_new_witnesses(
-            self,
-            guards: typing.List[int],
-            new_witnesses: typing.List[typing.Tuple[Point, typing.List[int]]],
+        self,
+        guards: typing.List[int],
+        new_witnesses: typing.List[typing.Tuple[Point, typing.List[int]]],
     ) -> None:
         pass
 
@@ -68,6 +68,9 @@ class SatBasedOptimizer:
         self.objective = 0
         self.solution = list(range(instance.num_positions()))
         self._logger.info("Ready for optimization.")
+        self._stats = {
+            "iteration_statistics": [],
+        }
 
     def add_upper_bound(self, upper_bound: float) -> None:
         self.upper_bound = min(self.upper_bound, upper_bound)
@@ -78,7 +81,8 @@ class SatBasedOptimizer:
         witnesses: typing.List[typing.Tuple[Point, typing.List[int]]],
         timer: Timer,
         search_strategy: SearchStrategy,
-    ) -> typing.Tuple[typing.List[int], float]:
+        opt_tol: float,
+    ) -> typing.Tuple[typing.List[int], float, float]:
         self._logger.info(
             "Computing optimal solution for %d witnesses...", len(witnesses)
         )
@@ -93,37 +97,69 @@ class SatBasedOptimizer:
                 timer=timer,
                 callback=self._witness_strategy,
                 search_strategy=search_strategy,
+                opt_tol=opt_tol,
             )
             self._logger.info(
                 "Found optimal solution with objective %f for witness set",
                 dist_optimizer.objective,
             )
             self.add_upper_bound(dist_optimizer.upper_bound)
-        except TimeoutError as te:
+        except TimeoutError as _:
             self.add_upper_bound(dist_optimizer.upper_bound)
             raise
-        return dist_optimizer.solution, dist_optimizer.objective
+        self._stats["iteration_statistics"].append(
+            {
+                "objective": dist_optimizer.objective,
+                "upper_bound": dist_optimizer.upper_bound,
+                "opt_gap": self.get_opt_gap(),
+                "num_witnesses": len(witnesses),
+                "solver": dist_optimizer.get_stats(),
+                "search_strategy": search_strategy.name,
+            }
+        )
+        return (
+            dist_optimizer.solution,
+            dist_optimizer.objective,
+            dist_optimizer.upper_bound,
+        )
 
-    def solve(self, time_limit: float = 900) -> "SatBasedOptimizer.Status":
+    def get_opt_gap(self) -> float:
+        """
+        Return the optimality gap, similar to the one defined by CP-SAT
+        """
+        if self.objective == 0:
+            return math.inf
+        return (self.upper_bound - self.objective) / self.objective
+
+    def get_stats(self) -> typing.Dict[str, typing.Any]:
+        stats = self._stats.copy()
+        stats["witness_stats"] = self._witness_strategy.get_stats()
+        return stats
+
+    def solve(
+        self, time_limit: float = 900, opt_tol: float = 0.0001
+    ) -> "SatBasedOptimizer.Status":
         try:
             timer = Timer(time_limit)
-            solution, obj = self._compute_optimal_for_witness_set(
+            solution, obj, ub = self._compute_optimal_for_witness_set(
                 self._witness_strategy.get_initial_witnesses(),
                 timer,
                 search_strategy=self.params.search_strategy_start,
+                opt_tol=opt_tol,
             )
-            self.upper_bound = obj
             self._logger.info("Setting upper bound to %f", self.upper_bound)
             new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(solution)
             while new_witnesses:
+                timer.check()
                 self._logger.info(
                     "Adding %d witnesses to cover missing area...", len(new_witnesses)
                 )
                 self.observer.on_new_witnesses(solution, new_witnesses)
-                solution, obj = self._compute_optimal_for_witness_set(
+                solution, obj, ub = self._compute_optimal_for_witness_set(
                     self._witness_strategy.witnesses,
                     timer,
                     search_strategy=self.params.search_strategy_iteration,
+                    opt_tol=opt_tol,
                 )
                 new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(
                     solution
@@ -131,6 +167,7 @@ class SatBasedOptimizer:
                 assert not any(
                     set(w[1]) & set(solution) for w in new_witnesses
                 ), "Redundant witness."
+            # Found a solution
             self.solution = solution
             self.objective = obj
             self._logger.info("Found solution with objective %f", self.objective)

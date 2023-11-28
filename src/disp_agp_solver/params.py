@@ -1,5 +1,6 @@
 from .distance_optimizer import SearchStrategy
 
+
 class OptimizerParams:
     def __init__(
         self,

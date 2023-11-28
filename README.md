@@ -58,71 +58,94 @@ manage to install it, the installation of this package should be easy.
 
 ## Mathematical Model
 
-For a given polygon $\mathcal{P}$ with vertices $V(\mathcal{P})$, we are looking for a set of guards $G \subseteq V(\mathcal{P})$ such that $\ell = \min_{g_1, g_2 \in G} \text{dist}(g_1, g_2)$ is maximized, and the every witness $w\in \mathcal{P}$ is visible to at least one guard $g \in G$, i.e., $\forall w \in \mathcal{P}: \exists g \in G: \text{visible}(w, g)$.
-There are two challenges in this problem for an efficient mathematical formulation:
+For a given polygon $\mathcal{P}$ with vertices $V(\mathcal{P})$, we are looking
+for a set of guards $G \subseteq V(\mathcal{P})$ such that
+$\ell = \min_{g_1, g_2 \in G} \text{dist}(g_1, g_2)$ is maximized, and the every
+witness $w\in \mathcal{P}$ is visible to at least one guard $g \in G$, i.e.,
+$\forall w \in \mathcal{P}: \exists g \in G: \text{visible}(w, g)$. There are
+two challenges in this problem for an efficient mathematical formulation:
 
-1. There is an infinite number of witnesses and corresponding visibility constraints.
+1. There is an infinite number of witnesses and corresponding visibility
+   constraints.
 2. A notorious $\max\min$-objective.
 
-The first problem can be handled by introducing a finite set of witnesses $\mathcal{W}$ and adding the corresponding visibility constraints to the model.
-Whenever the obtained solution misses some area, we can add a new witness to $\mathcal{W}$ via lazy constraints.
-The identification of the missing area can be done by computing the visibility polygon of the current set of guards and checking for uncovered areas.
-From these uncovered areas, we can compute new witnesses, e.g., by using the vertices of the skeleton.
-This approach has already been used in the literature for the classical AGP.
+The first problem can be handled by introducing a finite set of witnesses
+$\mathcal{W}$ and adding the corresponding visibility constraints to the model.
+Whenever the obtained solution misses some area, we can add a new witness to
+$\mathcal{W}$ via lazy constraints. The identification of the missing area can
+be done by computing the visibility polygon of the current set of guards and
+checking for uncovered areas. From these uncovered areas, we can compute new
+witnesses, e.g., by using the vertices of the skeleton. This approach has
+already been used in the literature for the classical AGP.
 
-The second problem requires different techniques for different solvers.
-We can solve it by rectified constraints:
+The second problem requires different techniques for different solvers. We can
+solve it by rectified constraints:
 
 ### Constraint Programming Model
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \text{maximize} \quad & \ell \\
 \text{subject to} \quad & \ell \leq \text{dist}(g_1, g_2) \text{ if } x_{g_1} \wedge x_{g_2} \quad& \forall g_1, g_2 \in V(\mathcal{P}) \\
 & \bigvee_{g \in V(\mathcal{P}), \text{visbile(w,g)}} x_g  & \forall w \in \mathcal{W} \\
 & x_g \in \mathbb{B} & \forall g \in V(\mathcal{P}) \\
 & \ell \in \mathbb{R}
-\end{aligned} $$
+\end{aligned}
+$$
 
-Rectified constraints are usually inefficient for MIP solvers, but some constraint programming solvers such as CP-SAT can often handle them reasonably well.
+Rectified constraints are usually inefficient for MIP solvers, but some
+constraint programming solvers such as CP-SAT can often handle them reasonably
+well.
 
 ### Mixed Integer Programming Model
 
-If an upper bound $M$ is already known, we can implement it directly as linear constraint.
-$$\begin{aligned}
+If an upper bound $M$ is already known, we can implement it directly as linear
+constraint.
+
+$$
+\begin{aligned}
 \text{maximize} \quad & \ell \\
 \text{subject to} \quad & \ell \leq \text{dist}(g_1, g_2) + (1-x_{g_1})\cdot M + (1-x_{g_2})\cdot M \quad& \forall g_1, g_2 \in V(\mathcal{P}) \\
 & \sum_{g \in V(\mathcal{P}), \text{visbile(w,g)}} x_g \geq 1  & \forall w \in \mathcal{W} \\
 & x_g \in \mathbb{B} & \forall g \in V(\mathcal{P})\\
 & \ell \in \mathbb{R}
-\end{aligned} $$
+\end{aligned}
+$$
 
-This model can be solved by a MIP solver such as Gurobi or CPLEX.
-However, the performance can be poor if not tight $M$ is known.
-Additionally, if the polygon can be guarded from a single vertex, the tight upper bound is infinity, which is not allowed in MIP solvers.
-This case can easily be detected by computing the visibility polygons for each vertex.
+This model can be solved by a MIP solver such as Gurobi or CPLEX. However, the
+performance can be poor if not tight $M$ is known. Additionally, if the polygon
+can be guarded from a single vertex, the tight upper bound is infinity, which is
+not allowed in MIP solvers. This case can easily be detected by computing the
+visibility polygons for each vertex.
 
 ### SAT-Model
 
-An important observation is that there are only $\mathcal{O}(|V(\mathcal{P})|^2)$ possible objective values.
-Thus, we can state the problem as a decision problem, asking if there exists a feasible solution with objective value at least $\ell$.
-If there is a feasible solution, we obtain a new upper bound.
-If there is no feasible solution, we obtain a new lower bound.
-We can repeat this process until the lower bound is equal to the upper bound.
-By using a binary search, we could find the optimal solution with $\mathcal{O}(\log |V(\mathcal{P})|)$ calls to the decision problem.
-However, one has to keep in mind that disproving the existence of a solution can be much more difficult than proving it, such that a binary search is not necessarily the best approach.
-Another question is if we directly want to add witnesses to any solution, or only to the optimal solution for a witness set.
-Computing the coverage of a guard set is possible in polynomial time, but it is still a geometric operation that can be expensive as it requires precise arithmetics.
+An important observation is that there are only
+$\mathcal{O}(|V(\mathcal{P})|^2)$ possible objective values. Thus, we can state
+the problem as a decision problem, asking if there exists a feasible solution
+with objective value at least $\ell$. If there is a feasible solution, we obtain
+a new upper bound. If there is no feasible solution, we obtain a new lower
+bound. We can repeat this process until the lower bound is equal to the upper
+bound. By using a binary search, we could find the optimal solution with
+$\mathcal{O}(\log |V(\mathcal{P})|)$ calls to the decision problem. However, one
+has to keep in mind that disproving the existence of a solution can be much more
+difficult than proving it, such that a binary search is not necessarily the best
+approach. Another question is if we directly want to add witnesses to any
+solution, or only to the optimal solution for a witness set. Computing the
+coverage of a guard set is possible in polynomial time, but it is still a
+geometric operation that can be expensive as it requires precise arithmetics.
 Thus, we may want to avoid it as much as possible.
 
-Building a formula that decides the existence of a solution with objective value at least $\ell$ that covers the given witnesses $\mathcal{W}$ is relatively easy and can be done as follows:
+Building a formula that decides the existence of a solution with objective value
+at least $\ell$ that covers the given witnesses $\mathcal{W}$ is relatively easy
+and can be done as follows:
 
 **Decide($\ell, \mathcal{W}$):**
 $$\bigwedge_{w \in \mathcal{W}} \left(\bigvee_{g \in V(\mathcal{P}), \text{LoS}_{\mathcal{P}}(w,g)} x_g\right) \wedge \bigwedge_{g, g' \in V(\mathcal{P}), \text{dist}(g, g') \leq \ell} \left(\neg x_{g} \vee \neg x_{g'}\right)$$
 
-Note that increasing $\ell$ or $\mathcal{W}$ can be done incrementally by adding new clauses to the formula,
-allowing the SAT-solver to maintain, e.g., learned clauses, and potentially speeding up the solving process.
-
-
+Note that increasing $\ell$ or $\mathcal{W}$ can be done incrementally by adding
+new clauses to the formula, allowing the SAT-solver to maintain, e.g., learned
+clauses, and potentially speeding up the solving process.
 
 ## Algorithm
 

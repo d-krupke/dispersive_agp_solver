@@ -18,11 +18,19 @@ Dominik Krupke, 2023, Braunschweig
 
 """
 
+from .cpsat import CpSatOptimizer
+from .gurobi import GurobiOptimizer
 from .instance import Instance
 from .optimizer import SatBasedOptimizer
-from .plotting import Plotter
 from .params import OptimizerParams, SearchStrategy
-from .cpsat import CpSatOptimizer
-from .gurobi import GurobiSolver
+from .plotting import Plotter
 
-__all__ = ["Instance", "DispAgpSolver", "DispAgpSolverObserver", "SatBasedOptimizer", "Plotter", "OptimizerParams", "SearchStrategy", "CpSatOptimizer", "GurobiSolver"]
+__all__ = [
+    "Instance",
+    "SatBasedOptimizer",
+    "Plotter",
+    "OptimizerParams",
+    "SearchStrategy",
+    "CpSatOptimizer",
+    "GurobiOptimizer",
+]

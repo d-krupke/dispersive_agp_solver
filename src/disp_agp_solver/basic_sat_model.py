@@ -5,6 +5,7 @@ from threading import Timer
 from pysat.solvers import Solver
 
 from .instance import Instance
+from .timer import Timer as StopWatch
 
 
 class BasicSatModel:
@@ -18,12 +19,29 @@ class BasicSatModel:
             self._logger = logging.getLogger("DispAgpSatModel")
         else:
             self._logger = logger
+        self._solver_name = solver
         self._instance = instance
         self._sat_solver = Solver(name=solver, incr=True)
         self._sat_solver.add_clause(i + 1 for i in range(instance.num_positions()))
         self._model = None
         self._num_coverage_constraints = 0
         self._num_prohibited_guards = 0
+        self._stats = {
+            "solve_calls": 0,
+            "num_resets": 0,
+            "solve_statistics": [],
+        }
+
+    def reset_constraints(self):
+        self._stats["num_resets"] += 1
+        self._sat_solver.delete()
+        self._sat_solver = Solver(name=self._solver_name, incr=True)
+        self._sat_solver.add_clause(
+            i + 1 for i in range(self._instance.num_positions())
+        )
+        self._num_coverage_constraints = 0
+        self._num_prohibited_guards = 0
+        self._model = None
 
     def add_coverage_constraint(self, vertices: typing.List[int]):
         assert all(0 <= i < self._instance.num_positions() for i in vertices)
@@ -43,6 +61,18 @@ class BasicSatModel:
         self._num_prohibited_guards += 1
         self._logger.debug("Prohibited guard pair (%d, %d).", guard_a, guard_b)
 
+    def _log_solver_stats(self, status, time):
+        self._stats["solve_calls"] += 1
+        self._stats["solve_statistics"].append(
+            {
+                "status": status,
+                "time": time,
+                "num_coverage_constraints": self._num_coverage_constraints,
+                "num_prohibited_guards": self._num_prohibited_guards,
+            }
+        )
+        self._stats["solve_statistics"][-1].update(self._sat_solver.accum_stats())
+
     def solve(self, timelimit: float = 900) -> bool:
         """
         Return a list of indices of guards that should be selected.
@@ -59,8 +89,10 @@ class BasicSatModel:
             solver.interrupt()
 
         timer = Timer(timelimit, interrupt, [self._sat_solver])
+        stop_watch = StopWatch()
         timer.start()
         status = self._sat_solver.solve_limited(expect_interrupt=True)
+        self._log_solver_stats(status, stop_watch.time())
         self._logger.info("SAT solver terminated (%fs).", self._sat_solver.time())
         timer.cancel()
         if status is None:
@@ -82,15 +114,8 @@ class BasicSatModel:
             raise RuntimeError(msg)
         return [i - 1 for i in self._model if i > 0]
 
-    def get_statistics(self):
-        stats = self._sat_solver.accum_stats().copy()
-        stats.update(
-            {
-                "num_coverage_constraints": self._num_coverage_constraints,
-                "num_prohibited_guards": self._num_prohibited_guards,
-            }
-        )
-        return stats
+    def get_stats(self):
+        return self._stats.copy()
 
     def __del__(self):
         self._sat_solver.delete()

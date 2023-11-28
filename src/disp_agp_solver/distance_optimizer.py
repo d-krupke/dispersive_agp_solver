@@ -34,6 +34,9 @@ class DistanceOptimizer:
         self._coverage_constraints = []
         self.solution = list(range(instance.num_positions()))  # trivial solution
         self._k = 0.0
+        self._stats = {
+            "ks": [],
+        }
 
     def add_upper_bound(self, upper_bound: float) -> None:
         self.upper_bound = min(self.upper_bound, upper_bound)
@@ -45,7 +48,7 @@ class DistanceOptimizer:
         if self._k > k:
             # reset model
             self._logger.info("Resetting model because k got lowered...")
-            self._sat_model = BasicSatModel(self.instance, logger=self._logger)
+            self._sat_model.reset_constraints()
             for constraint in self._coverage_constraints:
                 self._sat_model.add_coverage_constraint(constraint)
             self._k = 0.0
@@ -72,6 +75,7 @@ class DistanceOptimizer:
             k = (self.objective + self.upper_bound) / 2
             k = max(k, self._guard_distances.get_next_higher_distance(self.objective))
         k = min(k, self.upper_bound)
+        self._stats["ks"].append(k)
         return k
 
     def _solve_for_k_with_callback(
@@ -100,6 +104,16 @@ class DistanceOptimizer:
         self._coverage_constraints.append(vertices)
         self._logger.debug("Added coverage constraint for %d vertices.", len(vertices))
 
+    def get_opt_gap(self) -> float:
+        if self.objective == 0.0:
+            return math.inf
+        return abs(self.objective - self.upper_bound) / self.objective
+
+    def get_stats(self) -> typing.Dict[str, typing.Any]:
+        stats = self._stats.copy()
+        stats["solver"] = self._sat_model.get_stats()
+        return stats
+
     def solve(
         self,
         timelimit: float = 900,
@@ -108,11 +122,12 @@ class DistanceOptimizer:
             typing.Callable[[typing.List[int]], typing.List[typing.List[int]]]
         ] = None,
         timer: typing.Optional[Timer] = None,
+        opt_tol: float = 0.0001,
     ) -> bool:
         if not callback:
             callback = lambda _: []  # noqa: E731
         timer = timer if timer is not None else Timer(timelimit)
-        while self.objective < self.upper_bound:
+        while self.get_opt_gap() > opt_tol:
             timer.check()
             k = self._select_next_k(search_strategy)  # next value to try
             assert (

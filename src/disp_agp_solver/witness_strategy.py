@@ -23,6 +23,8 @@ class WitnessStrategy:
             "num_initial_witnesses": 0,
             "num_area_calls": 0,
             "num_guard_set_calls": 0,
+            "num_guard_set_calls_with_witnesses": 0,
+            "num_direct_calls": 0,
         }
 
     def get_witnesses_for_area(
@@ -71,17 +73,20 @@ class WitnessStrategy:
         missing_areas = self.guard_coverage.compute_uncovered_area(guards)
         for area in missing_areas:
             witnesses += self.get_witnesses_for_area(area)
+        if witnesses:
+            self._stats["num_guard_set_calls_with_witnesses"] += 1
         assert witnesses or not missing_areas, "Should not be empty."
         return witnesses
-    
+
     def get_stats(self) -> typing.Dict[str, typing.Any]:
-        stats  = {
+        stats = {
             "num_witnesses": len(self.witnesses),
         }
         stats.update(self._stats)
         return stats
 
     def __call__(self, guards: typing.List[int]) -> typing.List[typing.List[int]]:
+        self._stats["num_direct_calls"] += 1
         if not self.params.lazy:
             return []
         witnesses = self.get_witnesses_for_guard_set(guards)
