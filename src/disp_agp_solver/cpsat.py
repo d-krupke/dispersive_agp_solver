@@ -9,6 +9,7 @@ import math
 import typing
 from enum import Enum
 from typing import Any
+import logging
 
 from ortools.sat.python import cp_model
 
@@ -62,11 +63,13 @@ class _CpSatModel:
     """
 
     def __init__(
-        self, instance: Instance, dists: GuardDistances, scaling_factor: int = 10_000
+        self, instance: Instance, dists: GuardDistances, logger: logging.Logger, scaling_factor: int = 10_000
     ) -> None:
+        self.logger = logger
         self.instance = instance
         self.model = cp_model.CpModel()
         self.solver = cp_model.CpSolver()
+        self.solver.log_callback = self.logger.info
         self.scaling_factor = scaling_factor
         self._vars = _VarMap(
             instance.num_positions(),
@@ -131,7 +134,6 @@ class _CpSatModel:
         self._stats["num_cpsat_solves"] += 1
         solver = self.solver
         solver.parameters.max_time_in_seconds = timer.remaining()
-        solver.parameters.log_search_progress = True
         solver.parameters.relative_gap_limit = opt_tol
         status = solver.Solve(self.model)
         self._update_solution(status, solver)
@@ -147,17 +149,20 @@ class CpSatOptimizer:
         FEASIBLE = 1
         UNKNOWN = 2
 
-    def __init__(self, instance: Instance):
+    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None):
+        self._logger = logger if logger is not None else logging.getLogger("CpSatOptimizer")
+        self._logger.info("Initializing CP-SAT optimizer")
         self.instance = instance
         self._guard_coverage = GuardCoverage(instance)
         self._dists = GuardDistances(instance, self._guard_coverage)
         self._witness_strategy = WitnessStrategy(
             instance, self._guard_coverage, OptimizerParams()
         )
-        self._model = _CpSatModel(instance, self._dists)
+        self._model = _CpSatModel(instance, self._dists, logger=self._logger)
         self.solution = None
         self.upper_bound = math.inf
         self.objective = 0
+        self._logger.info("CP-SAT optimizer initialized")
 
     def get_opt_gap(self) -> float:
         """
@@ -177,6 +182,7 @@ class CpSatOptimizer:
                 timer.check()
                 for _, guards in new_witnesses:
                     self._model.add_witness(guards)
+                self._logger.info("Added %d witnesses.", len(new_witnesses))
                 self._model.add_upper_bound(self.upper_bound)
                 obj, solution = self._model.solve(timer, opt_tol)
                 self.upper_bound = obj

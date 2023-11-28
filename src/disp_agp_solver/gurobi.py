@@ -7,7 +7,7 @@ import itertools
 import math
 import typing
 from enum import Enum
-
+import logging
 import gurobipy as gp
 from gurobipy import GRB
 
@@ -42,7 +42,9 @@ class GurobiOptimizer:
         FEASIBLE = 1
         UNKNOWN = 2
 
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None) -> None:
+        self._logger = logger if logger else logging.getLogger("GurobiOptimizer")
+        self._logger.info("Initializing GurobiOptimizer")
         self.instance = instance
         self._coverages = GuardCoverage(instance)
         self._witness_strategy = WitnessStrategy(
@@ -56,6 +58,7 @@ class GurobiOptimizer:
         self.upper_bound = math.inf
         self._build_objective()
         self._add_initial_witnesses()
+        self._logger.info("Finished initializing GurobiOptimizer")
 
     def _add_initial_witnesses(self):
         for _witness, guards in self._witness_strategy.get_initial_witnesses():
@@ -119,10 +122,14 @@ class GurobiOptimizer:
                     if len(solution) == 1:
                         self.solution = solution
                         self.objective = math.inf
+            elif where == gp.GRB.Callback.MESSAGE:
+                msg = model.cbGet(GRB.Callback.MSG_STRING)
+                self._logger.info(msg)
 
         self._model.Params.MIPGap = (
             opt_tol  # Waring: This may differ from the definition of CP-SAT
         )
+        self._model.Params.LogToConsole = 0
         self._model.Params.TimeLimit = time_limit
         self._model.Params.LazyConstraints = 1
         self._model.optimize(callback)
