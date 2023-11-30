@@ -1,8 +1,12 @@
+"""
+This file implements geometric computations for making sure that we cover the whole area.
+"""
+
 import typing
 
 from pyvispoly import Point, Polygon, PolygonWithHoles, VisibilityPolygonCalculator
 
-from .instance import Instance
+from disp_agp_solver.instance import Instance
 
 
 class GuardCoverage:

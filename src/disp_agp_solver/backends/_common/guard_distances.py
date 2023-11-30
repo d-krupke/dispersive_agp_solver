@@ -13,7 +13,7 @@ import typing
 import networkx as nx
 
 from .guard_coverage import GuardCoverage
-from .instance import Instance
+from disp_agp_solver.instance import Instance
 
 
 class GuardDistances:

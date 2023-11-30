@@ -5,13 +5,12 @@ from enum import Enum
 
 from pyvispoly import Point, PolygonWithHoles
 
+from disp_agp_solver._utils import Timer
+from disp_agp_solver.instance import Instance
+
+from .._common import GuardCoverage, GuardDistances, WitnessStrategy
 from .distance_optimizer import DistanceOptimizer, SearchStrategy
-from .guard_coverage import GuardCoverage
-from .guard_distances import GuardDistances
-from .instance import Instance
 from .params import OptimizerParams
-from .timer import Timer
-from .witness_strategy import WitnessStrategy
 
 
 class OptimizerObserver:
@@ -61,7 +60,7 @@ class SatBasedOptimizer:
         self._guard_distances = GuardDistances(instance, self._guard_coverage)
         self._logger.info("Setting up witness strategy...")
         self._witness_strategy = WitnessStrategy(
-            instance, guard_coverage=self._guard_coverage, params=self.params
+            instance, guard_coverage=self._guard_coverage, lazy=self.params.lazy, add_all_vertices_as_witnesses=self.params.add_all_vertices_as_witnesses
         )
         self.observer = OptimizerObserver()
         self.instance = instance

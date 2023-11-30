@@ -4,10 +4,11 @@ import math
 import typing
 from enum import Enum
 
+from disp_agp_solver._utils.timer import Timer
+from disp_agp_solver.instance import Instance
+
+from .._common import GuardDistances
 from .basic_sat_model import BasicSatModel
-from .guard_distances import GuardDistances
-from .instance import Instance
-from .timer import Timer
 
 
 class SearchStrategy(Enum):
@@ -17,6 +18,11 @@ class SearchStrategy(Enum):
 
 
 class DistanceOptimizer:
+    """
+    Maximize the dispersion for a given witness set.
+    This does not rely on geometric operations, but it can be introduced by
+    callbacks.
+    """
     def __init__(
         self,
         instance: Instance,

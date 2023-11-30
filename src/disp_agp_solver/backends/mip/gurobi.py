@@ -12,20 +12,18 @@ from enum import Enum
 import gurobipy as gp
 from gurobipy import GRB
 
-from .guard_coverage import GuardCoverage
-from .guard_distances import GuardDistances
-from .instance import Instance
-from .params import OptimizerParams
-from .witness_strategy import WitnessStrategy
+from disp_agp_solver.instance import Instance
+
+from .._common import GuardCoverage, GuardDistances, WitnessStrategy
 
 
 class _VarMap:
     def __init__(self, instance: Instance, model: gp.Model) -> None:
         self._vars = [
-            model.addVar(vtype=gp.GRB.BINARY, name=f"x_{i}")
+            model.addVar(vtype=GRB.BINARY, name=f"x_{i}")
             for i in range(instance.num_positions())
         ]
-        self._l = model.addVar(vtype=gp.GRB.CONTINUOUS, name="l")
+        self._l = model.addVar(vtype=GRB.CONTINUOUS, name="l")
 
     def x(self, g: int) -> gp.Var:
         return self._vars[g]
@@ -51,7 +49,7 @@ class GurobiOptimizer:
         self.instance = instance
         self._coverages = GuardCoverage(instance)
         self._witness_strategy = WitnessStrategy(
-            instance, self._coverages, OptimizerParams()
+            instance, self._coverages
         )
         self._dists = GuardDistances(instance, self._coverages)
         self._model = gp.Model()
@@ -68,7 +66,7 @@ class GurobiOptimizer:
             self._model.addConstr(gp.quicksum(self._vars.x(g) for g in guards) >= 1)
 
     def _build_objective(self):
-        self._model.setObjective(self._vars.l(), gp.GRB.MAXIMIZE)
+        self._model.setObjective(self._vars.l(), GRB.MAXIMIZE)
 
         def dist(g: int, g_: int) -> float:
             return self._dists.distance(g, g_)
@@ -107,7 +105,7 @@ class GurobiOptimizer:
         self, time_limit: float, opt_tol: float = 0.0001
     ) -> "GurobiOptimizer.Status":
         def callback(model: gp.Model, where: int) -> None:
-            if where == gp.GRB.Callback.MIPSOL:
+            if where == GRB.Callback.MIPSOL:
                 solution = self._vars.get_guards(lambda x: model.cbGetSolution(x))
                 new_witnesses = self._witness_strategy.get_witnesses_for_guard_set(
                     solution
@@ -125,7 +123,7 @@ class GurobiOptimizer:
                     if len(solution) == 1:
                         self.solution = solution
                         self.objective = math.inf
-            elif where == gp.GRB.Callback.MESSAGE:
+            elif where == GRB.Callback.MESSAGE:
                 msg = model.cbGet(GRB.Callback.MSG_STRING)
                 self._logger.info(msg)
 

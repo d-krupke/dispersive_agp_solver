@@ -18,20 +18,13 @@ Dominik Krupke, 2023, Braunschweig
 
 """
 
-from .cpsat import CpSatOptimizer
-from .gurobi import GurobiOptimizer
+from .backends import solve
 from .instance import Instance
-from .optimizer import SatBasedOptimizer
-from .params import OptimizerParams, SearchStrategy
 from .plotting import Plotter
 from .sgdb import SalzburgPolygonDataBase
 __all__ = [
     "Instance",
-    "SatBasedOptimizer",
     "Plotter",
-    "OptimizerParams",
-    "SearchStrategy",
-    "CpSatOptimizer",
-    "GurobiOptimizer",
+    "solve",
     "SalzburgPolygonDataBase",
 ]

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from pyvispoly import plot_polygon
 
-from .guard_coverage import GuardCoverage
+from .backends._common import GuardCoverage
 from .instance import Instance
 
 

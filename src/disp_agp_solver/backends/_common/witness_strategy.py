@@ -7,18 +7,18 @@ import typing
 from pyvispoly import Point, PolygonWithHoles
 
 from .guard_coverage import GuardCoverage
-from .instance import Instance
-from .params import OptimizerParams
+from disp_agp_solver.instance import Instance
 
 
 class WitnessStrategy:
     def __init__(
-        self, instance: Instance, guard_coverage: GuardCoverage, params: OptimizerParams
+        self, instance: Instance, guard_coverage: GuardCoverage, lazy: bool = True, add_all_vertices_as_witnesses: bool = True
     ) -> None:
         self.instance = instance
         self.guard_coverage = guard_coverage
         self.witnesses = []
-        self.params = params
+        self.lazy = lazy
+        self.add_all_vertices_as_witnesses = add_all_vertices_as_witnesses
         self._stats = {
             "num_initial_witnesses": 0,
             "num_area_calls": 0,
@@ -48,7 +48,7 @@ class WitnessStrategy:
         """
         Add witnesses to the given polygon.
         """
-        if not self.params.add_all_vertices_as_witnesses:
+        if not self.add_all_vertices_as_witnesses:
             trivial_constraint = list(range(self.instance.num_positions()))
             self.witnesses += trivial_constraint
             return [(None, trivial_constraint)]
@@ -87,7 +87,7 @@ class WitnessStrategy:
 
     def __call__(self, guards: typing.List[int]) -> typing.List[typing.List[int]]:
         self._stats["num_direct_calls"] += 1
-        if not self.params.lazy:
+        if not self.lazy:
             return []
         witnesses = self.get_witnesses_for_guard_set(guards)
         return [w[1] for w in witnesses]

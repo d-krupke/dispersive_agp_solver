@@ -13,12 +13,10 @@ from typing import Any
 
 from ortools.sat.python import cp_model
 
-from .guard_coverage import GuardCoverage
-from .guard_distances import GuardDistances
-from .instance import Instance
-from .params import OptimizerParams
-from .timer import Timer
-from .witness_strategy import WitnessStrategy
+from disp_agp_solver._utils.timer import Timer
+from disp_agp_solver.instance import Instance
+
+from .._common import GuardCoverage, GuardDistances, WitnessStrategy
 
 
 class _VarMap:
@@ -164,7 +162,7 @@ class CpSatOptimizer:
         self._guard_coverage = GuardCoverage(instance)
         self._dists = GuardDistances(instance, self._guard_coverage)
         self._witness_strategy = WitnessStrategy(
-            instance, self._guard_coverage, OptimizerParams()
+            instance, self._guard_coverage
         )
         self._model = _CpSatModel(instance, self._dists, logger=self._logger)
         self.solution = None
