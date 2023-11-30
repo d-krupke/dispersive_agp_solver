@@ -23,6 +23,7 @@ class DistanceOptimizer:
     This does not rely on geometric operations, but it can be introduced by
     callbacks.
     """
+
     def __init__(
         self,
         instance: Instance,

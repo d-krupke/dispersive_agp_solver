@@ -60,7 +60,10 @@ class SatBasedOptimizer:
         self._guard_distances = GuardDistances(instance, self._guard_coverage)
         self._logger.info("Setting up witness strategy...")
         self._witness_strategy = WitnessStrategy(
-            instance, guard_coverage=self._guard_coverage, lazy=self.params.lazy, add_all_vertices_as_witnesses=self.params.add_all_vertices_as_witnesses
+            instance,
+            guard_coverage=self._guard_coverage,
+            lazy=self.params.lazy,
+            add_all_vertices_as_witnesses=self.params.add_all_vertices_as_witnesses,
         )
         self.observer = OptimizerObserver()
         self.instance = instance

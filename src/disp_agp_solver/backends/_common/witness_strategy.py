@@ -6,13 +6,18 @@ import typing
 
 from pyvispoly import Point, PolygonWithHoles
 
-from .guard_coverage import GuardCoverage
 from disp_agp_solver.instance import Instance
+
+from .guard_coverage import GuardCoverage
 
 
 class WitnessStrategy:
     def __init__(
-        self, instance: Instance, guard_coverage: GuardCoverage, lazy: bool = True, add_all_vertices_as_witnesses: bool = True
+        self,
+        instance: Instance,
+        guard_coverage: GuardCoverage,
+        lazy: bool = True,
+        add_all_vertices_as_witnesses: bool = True,
     ) -> None:
         self.instance = instance
         self.guard_coverage = guard_coverage

@@ -22,6 +22,7 @@ from .backends import solve
 from .instance import Instance
 from .plotting import Plotter
 from .sgdb import SalzburgPolygonDataBase
+
 __all__ = [
     "Instance",
     "Plotter",

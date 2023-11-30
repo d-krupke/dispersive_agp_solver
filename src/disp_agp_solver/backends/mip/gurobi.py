@@ -48,9 +48,7 @@ class GurobiOptimizer:
         self._logger.info("Initializing GurobiOptimizer")
         self.instance = instance
         self._coverages = GuardCoverage(instance)
-        self._witness_strategy = WitnessStrategy(
-            instance, self._coverages
-        )
+        self._witness_strategy = WitnessStrategy(instance, self._coverages)
         self._dists = GuardDistances(instance, self._coverages)
         self._model = gp.Model()
         self._vars = _VarMap(instance, self._model)

@@ -1,3 +1,3 @@
-from  .cpsat import CpSatOptimizer
+from .cpsat import CpSatOptimizer
 
 __all__ = ["CpSatOptimizer"]

@@ -1,12 +1,16 @@
-from pathlib import Path
 import json
-import re
-import requests
 import lzma
+import re
+from pathlib import Path
+
 import networkx as nx
+import requests
+
 from ..instance import Instance
+
 # Data mapping instances names to urls
 _db_file = Path(__file__).parent.absolute() / "sbgdb.json"
+
 
 def _integralize(g: nx.Graph, s: int):
     for n in g.nodes:
@@ -48,6 +52,7 @@ def _list_to_instance(outer_face, holes):
     holes = [[position_to_index[p] for p in hole] for hole in holes]
     return Instance(positions, boundary, holes)
 
+
 class SalzburgPolygonDataBase:
     def __init__(self):
         with open(_db_file) as f:
@@ -58,7 +63,7 @@ class SalzburgPolygonDataBase:
         # the url looks like this: https://sbgdb.cs.sbg.ac.at/db/sbgdb-20200507/polygons/random/srpg_perturbed_smr/srpg_smr9957440.graphml.xz
         # the number at the end is the size
         assert instance_url.endswith(".graphml.xz")
-        instance_url_short = instance_url.split("/")[-1][:-len(".graphml.xz")]
+        instance_url_short = instance_url.split("/")[-1][: -len(".graphml.xz")]
         match = re.search(r"(?P<size>\d+)_\d+$", instance_url_short)
         if match:
             return int(match.group("size"))
@@ -66,12 +71,14 @@ class SalzburgPolygonDataBase:
         match = re.search(r"\d+$", instance_url_short)
         assert match, f"{instance_url} does not end with a number"
         return int(match.group())
-    
+
     def get_name_from_url(self, instance_url):
-        return str(instance_url).split("/")[-1][:-len(".graphml.xz")]
+        return str(instance_url).split("/")[-1][: -len(".graphml.xz")]
 
     def get_download_path(self, instance_url):
-        return self._cache_folder / (self.get_name_from_url(instance_url)+".graphml.xz")
+        return self._cache_folder / (
+            self.get_name_from_url(instance_url) + ".graphml.xz"
+        )
 
     def download(self, instance_url):
         # download the instance
@@ -84,13 +91,13 @@ class SalzburgPolygonDataBase:
             data.raise_for_status()
             # Save file data to local copy
             f.write(data.content)
-        
+
     def iter_range(self, min_size, max_size):
         for url in self._urls["sbgdb-20200507"]:
             size = self.get_size_from_url(url)
             if min_size <= size <= max_size:
                 yield url
-    
+
     def __getitem__(self, instance_url):
         # check if the instance is already downloaded
         if not self.get_download_path(instance_url).exists():
@@ -108,10 +115,5 @@ class SalzburgPolygonDataBase:
         # convert to instance
         return _list_to_instance(outer_face, holes)
 
-
     def __iter__(self):
         return iter(self._urls["sbgdb-20200507"])
-    
-
-        
-        

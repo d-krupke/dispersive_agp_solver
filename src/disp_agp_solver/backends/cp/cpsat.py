@@ -161,9 +161,7 @@ class CpSatOptimizer:
         self.instance = instance
         self._guard_coverage = GuardCoverage(instance)
         self._dists = GuardDistances(instance, self._guard_coverage)
-        self._witness_strategy = WitnessStrategy(
-            instance, self._guard_coverage
-        )
+        self._witness_strategy = WitnessStrategy(instance, self._guard_coverage)
         self._model = _CpSatModel(instance, self._dists, logger=self._logger)
         self.solution = None
         self.upper_bound = math.inf
