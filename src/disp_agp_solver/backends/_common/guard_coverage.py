@@ -8,13 +8,17 @@ from pyvispoly import Point, Polygon, PolygonWithHoles, VisibilityPolygonCalcula
 
 from disp_agp_solver.instance import Instance
 
-
+import logging
 class GuardCoverage:
     """
     Computes the visibility polygons of all guards and can compute the missing area of a set of guards.
     """
 
-    def __init__(self, instance: Instance) -> None:
+    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None) -> None:
+        if logger is None:
+            self._logger = logging.getLogger("DispAgpSatModel")
+        else:
+            self._logger = logger
         self._instance = instance
         self._visibility_polygon_calculator = VisibilityPolygonCalculator(
             instance.as_cgal_polygon()
@@ -44,11 +48,19 @@ class GuardCoverage:
     ) -> typing.List[PolygonWithHoles]:
         missing_area = [self._instance.as_cgal_polygon()]
         coverages = [self.get_visibility_of_guard(guard) for guard in guards]
+
+        def diff(poly_a, poly_b):
+            self._logger.info("Difference of %s and %s", poly_a, poly_b)
+            self._logger.info("Areas: %s and %s", float(poly_a.area()), float(poly_b.area()))
+            res = poly_a.difference(poly_b)
+            self._logger.info("Result: %s", res)
+            return res
+
         for coverage in coverages:
             assert all(isinstance(p, PolygonWithHoles) for p in missing_area)
             assert isinstance(coverage, PolygonWithHoles)
             # difference is always a list of polygons as it can split a polygon into multiple parts
-            missing_area = sum((poly.difference(coverage) for poly in missing_area), [])
+            missing_area = sum((diff(poly, coverage) for poly in missing_area), [])
         return missing_area
 
     def compute_guards_within_polygon(self, poly: Polygon) -> typing.List[int]:

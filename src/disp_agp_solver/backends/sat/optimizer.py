@@ -55,7 +55,7 @@ class SatBasedOptimizer:
         self._logger = logger if logger else logging.getLogger("DispAgpSolver")
         self.params = params if params else OptimizerParams()
         self._logger.info("Setting up coverage calculator...")
-        self._guard_coverage = GuardCoverage(instance)
+        self._guard_coverage = GuardCoverage(instance, logger=self._logger)
         self._logger.info("Setting up guard distances...")
         self._guard_distances = GuardDistances(instance, self._guard_coverage)
         self._logger.info("Setting up witness strategy...")
@@ -64,6 +64,7 @@ class SatBasedOptimizer:
             guard_coverage=self._guard_coverage,
             lazy=self.params.lazy,
             add_all_vertices_as_witnesses=self.params.add_all_vertices_as_witnesses,
+            logger=self._logger,
         )
         self.observer = OptimizerObserver()
         self.instance = instance

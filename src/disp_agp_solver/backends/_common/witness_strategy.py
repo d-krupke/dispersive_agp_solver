@@ -9,7 +9,7 @@ from pyvispoly import Point, PolygonWithHoles
 from disp_agp_solver.instance import Instance
 
 from .guard_coverage import GuardCoverage
-
+import logging
 
 class WitnessStrategy:
     def __init__(
@@ -18,7 +18,13 @@ class WitnessStrategy:
         guard_coverage: GuardCoverage,
         lazy: bool = True,
         add_all_vertices_as_witnesses: bool = True,
+        logger: typing.Optional[logging.Logger] = None,
+
     ) -> None:
+        if logger is None:
+            self._logger = logging.getLogger("DispAgpSatModel")
+        else:
+            self._logger = logger
         self.instance = instance
         self.guard_coverage = guard_coverage
         self.witnesses = []
@@ -40,11 +46,24 @@ class WitnessStrategy:
         """
         self._stats["num_area_calls"] += 1
         witnesses = []
-        for witness in area.interior_sample_points():
-            guards = self.guard_coverage.compute_guards_for_witness(witness)
-            witnesses.append((witness, guards))
+        self._logger.info("Computing witnesses for area %s of size %s", area, area.area())
+        try:
+            for witness in area.interior_sample_points():
+                self._logger.info("Computing guards for witness %s", witness)
+                guards = self.guard_coverage.compute_guards_for_witness(witness)
+                self._logger.info("Guards: %s", guards)
+                witnesses.append((witness, guards))
+        except RuntimeError as e:
+            self._logger.info("Could not compute witnesses for area: %s", e)
+            import matplotlib.pyplot as plt
+            from pyvispoly import plot_polygon
+            fig, ax = plt.subplots()
+            plot_polygon(area, ax=ax)
+            plt.show()
+            raise
         assert witnesses, "Should not be empty."
         self.witnesses += witnesses
+        self._logger.info("Witnesses: %s", witnesses)
         return witnesses
 
     def get_initial_witnesses(
