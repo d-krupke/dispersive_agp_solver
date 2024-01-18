@@ -10,7 +10,7 @@ import itertools
 import math
 import typing
 
-import networkx as nx
+import rustworkx as rw
 
 from disp_agp_solver.instance import Instance
 
@@ -22,7 +22,7 @@ class GuardDistances:
         self, instance: Instance, guard_coverage: typing.Optional[GuardCoverage]
     ) -> None:
         guard_coverage = guard_coverage if guard_coverage else GuardCoverage(instance)
-        self._graph = nx.Graph()
+        self._graph = rw.PyGraph()
         self._graph.add_nodes_from(range(instance.num_positions()))
         for i in range(instance.num_positions()):
             for j in range(i + 1, instance.num_positions()):
@@ -31,8 +31,8 @@ class GuardDistances:
                         (instance.positions[i][0] - instance.positions[j][0]) ** 2
                         + (instance.positions[i][1] - instance.positions[j][1]) ** 2
                     )
-                    self._graph.add_edge(i, j, weight=dist)
-        if not nx.is_connected(self._graph):
+                    self._graph.add_edge(i, j, dist)
+        if not rw.is_connected(self._graph):
             msg = "Instance is not connected"
             raise ValueError(msg)
         self._apsp = None
@@ -44,9 +44,9 @@ class GuardDistances:
         """
         if not self._apsp is not None:
             self._apsp = dict(
-                nx.all_pairs_dijkstra_path_length(self._graph, weight="weight")
+                rw.all_pairs_dijkstra_path_lengths(self._graph, lambda e: float(e))
             )
-            guards = list(range(self._graph.number_of_nodes()))
+            guards = list(range(self._graph.num_nodes()))
             self._sorted_distances = [
                 ((i, j), self._apsp[i][j]) for i, j in itertools.combinations(guards, 2)
             ]
@@ -98,9 +98,9 @@ class GuardDistances:
     def distance(self, i: int, j: int) -> float:
         if self._apsp:
             return self._apsp[i][j]
-        return nx.shortest_path_length(self._graph, i, j, weight="weight")
+        return rw.dijkstra_shortest_path_length(self._graph, i, lambda e: float(e))[j]
 
     def shortest_path(self, i: int, j: int) -> typing.List[int]:
-        sp = nx.shortest_path(self._graph, i, j, weight="weight")
+        sp = rw.dijkstra_shortest_paths(self._graph, i, lambda e: float(e))[j]
         assert isinstance(sp, list)
         return sp

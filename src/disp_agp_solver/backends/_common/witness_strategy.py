@@ -2,6 +2,7 @@
 This file implements the witness strategy for the dispersion AGP solver.
 It can be used for different approaches.
 """
+import logging
 import typing
 
 from pyvispoly import Point, PolygonWithHoles
@@ -9,7 +10,7 @@ from pyvispoly import Point, PolygonWithHoles
 from disp_agp_solver.instance import Instance
 
 from .guard_coverage import GuardCoverage
-import logging
+
 
 class WitnessStrategy:
     def __init__(
@@ -19,7 +20,6 @@ class WitnessStrategy:
         lazy: bool = True,
         add_all_vertices_as_witnesses: bool = True,
         logger: typing.Optional[logging.Logger] = None,
-
     ) -> None:
         if logger is None:
             self._logger = logging.getLogger("DispAgpSatModel")
@@ -46,24 +46,26 @@ class WitnessStrategy:
         """
         self._stats["num_area_calls"] += 1
         witnesses = []
-        self._logger.info("Computing witnesses for area %s of size %s", area, area.area())
+        self._logger.debug(
+            "Computing witnesses for area %s of size %s", area, area.area()
+        )
         try:
             for witness in area.interior_sample_points():
-                self._logger.info("Computing guards for witness %s", witness)
+                self._logger.debug("Computing guards for witness %s", witness)
                 guards = self.guard_coverage.compute_guards_for_witness(witness)
-                self._logger.info("Guards: %s", guards)
+                self._logger.debug("Guards: %s", guards)
                 witnesses.append((witness, guards))
         except RuntimeError as e:
-            self._logger.info("Could not compute witnesses for area: %s", e)
-            import matplotlib.pyplot as plt
-            from pyvispoly import plot_polygon
-            fig, ax = plt.subplots()
-            plot_polygon(area, ax=ax)
-            plt.show()
-            raise
+            self._logger.warning("Error while computing witnesses. Trying to repair.")
+            from pyvispoly import repair
+
+            areas = repair(area)
+            assert len(areas) >= 2
+            for area in areas:
+                witnesses += self.get_witnesses_for_area(area)
         assert witnesses, "Should not be empty."
         self.witnesses += witnesses
-        self._logger.info("Witnesses: %s", witnesses)
+        self._logger.info("Found %s witnesses for missing area.", len(witnesses))
         return witnesses
 
     def get_initial_witnesses(

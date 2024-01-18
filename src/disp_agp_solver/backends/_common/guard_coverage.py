@@ -2,19 +2,22 @@
 This file implements geometric computations for making sure that we cover the whole area.
 """
 
+import logging
 import typing
 
 from pyvispoly import Point, Polygon, PolygonWithHoles, VisibilityPolygonCalculator
 
 from disp_agp_solver.instance import Instance
 
-import logging
+
 class GuardCoverage:
     """
     Computes the visibility polygons of all guards and can compute the missing area of a set of guards.
     """
 
-    def __init__(self, instance: Instance, logger: typing.Optional[logging.Logger]=None) -> None:
+    def __init__(
+        self, instance: Instance, logger: typing.Optional[logging.Logger] = None
+    ) -> None:
         if logger is None:
             self._logger = logging.getLogger("DispAgpSatModel")
         else:
@@ -50,10 +53,13 @@ class GuardCoverage:
         coverages = [self.get_visibility_of_guard(guard) for guard in guards]
 
         def diff(poly_a, poly_b):
-            self._logger.info("Difference of %s and %s", poly_a, poly_b)
-            self._logger.info("Areas: %s and %s", float(poly_a.area()), float(poly_b.area()))
+            if self._logger.isEnabledFor(logging.DEBUG):
+                self._logger.debug("Polygons: %s and %s", poly_a, poly_b)
+                self._logger.debug(
+                    "Areas: %s and %s", float(poly_a.area()), float(poly_b.area())
+                )
             res = poly_a.difference(poly_b)
-            self._logger.info("Result: %s", res)
+            self._logger.debug("Result: %s", res)
             return res
 
         for coverage in coverages:
