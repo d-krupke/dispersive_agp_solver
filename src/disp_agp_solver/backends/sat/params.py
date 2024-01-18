@@ -1,11 +1,17 @@
-from .distance_optimizer import SearchStrategy
 import typing
+
+from .distance_optimizer import SearchStrategy
+
 
 class OptimizerParams:
     def __init__(
         self,
-        search_strategy_start: typing.Union[SearchStrategy, str] = SearchStrategy.BINARY,
-        search_strategy_iteration: typing.Union[SearchStrategy, str] = SearchStrategy.BINARY,
+        search_strategy_start: typing.Union[
+            SearchStrategy, str
+        ] = SearchStrategy.BINARY,
+        search_strategy_iteration: typing.Union[
+            SearchStrategy, str
+        ] = SearchStrategy.BINARY,
         lazy: bool = True,
         add_all_vertices_as_witnesses: bool = True,
     ) -> None:

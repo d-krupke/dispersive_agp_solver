@@ -18,7 +18,7 @@ Dominik Krupke, 2023, Braunschweig
 
 """
 
-from .backends import solve, OptimizerParams, SearchStrategy
+from .backends import OptimizerParams, SearchStrategy, solve
 from .instance import Instance
 from .plotting import Plotter
 from .sgdb import SalzburgPolygonDataBase
