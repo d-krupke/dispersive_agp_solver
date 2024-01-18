@@ -1,6 +1,6 @@
 from .cp import CpSatOptimizer
 from .mip import GurobiOptimizer
-from .sat import OptimizerParams, SatBasedOptimizer
+from .sat import OptimizerParams, SatBasedOptimizer, SearchStrategy
 
 
 def solve(
@@ -29,4 +29,4 @@ def solve(
     raise NotImplementedError(msg)
 
 
-__all__ = ["SatBasedOptimizer", "OptimizerParams", "solve"]
+__all__ = ["SatBasedOptimizer", "OptimizerParams", "solve", "SearchStrategy"]
