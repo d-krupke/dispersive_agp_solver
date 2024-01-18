@@ -1,5 +1,6 @@
 from .sat import OptimizerParams, SatBasedOptimizer
-
+from .cp import CpSatOptimizer
+from .mip import GurobiOptimizer
 
 def solve(
     instance,
@@ -13,6 +14,14 @@ def solve(
         solver = SatBasedOptimizer(
             instance, logger=logger, params=OptimizerParams(**params)
         )
+        solver.solve(time_limit, opt_tol)
+        return solver.solution, solver.objective, solver.upper_bound
+    elif backend == "CP-SAT":
+        solver = CpSatOptimizer(instance, logger=logger)
+        solver.solve(time_limit, opt_tol)
+        return solver.solution, solver.objective, solver.upper_bound
+    elif backend == "MIP":
+        solver = GurobiOptimizer(instance, logger=logger)
         solver.solve(time_limit, opt_tol)
         return solver.solution, solver.objective, solver.upper_bound
     msg = f"Invalid backend: {backend}"

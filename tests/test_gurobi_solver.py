@@ -1,7 +1,7 @@
 import math
 
-from disp_agp_solver import GurobiOptimizer, Instance
-
+from disp_agp_solver import Instance
+from disp_agp_solver.backends import GurobiOptimizer
 
 def test_square():
     instance = Instance([(0, 0), (1, 0), (1, 1), (0, 1)], [0, 1, 2, 3])
@@ -9,6 +9,7 @@ def test_square():
     status = optimizer.solve(10)
     assert status == GurobiOptimizer.Status.OPTIMAL
     assert optimizer.objective == math.inf
+    assert optimizer.solution is not None
     assert len(optimizer.solution) == 1
 
 
@@ -23,4 +24,5 @@ def test_square_with_hole():
     assert status == GurobiOptimizer.Status.OPTIMAL
     assert optimizer.objective < 20.0
     assert optimizer.objective > 10.0
+    assert optimizer.solution is not None
     assert len(optimizer.solution) >= 2

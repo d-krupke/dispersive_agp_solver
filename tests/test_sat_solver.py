@@ -1,6 +1,7 @@
 import math
 
-from disp_agp_solver import Instance, SatBasedOptimizer
+from disp_agp_solver import Instance
+from disp_agp_solver.backends import SatBasedOptimizer
 
 
 def test_square():
