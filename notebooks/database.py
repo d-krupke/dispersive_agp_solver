@@ -41,4 +41,3 @@ for instance_url in db.iter_range(800, 2000):
     instance = db[instance_url]
     solution, obj, ub = solve(instance, logger=logger, time_limit=60)
     print(solution)
-

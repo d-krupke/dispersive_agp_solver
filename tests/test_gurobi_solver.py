@@ -3,6 +3,7 @@ import math
 from disp_agp_solver import Instance
 from disp_agp_solver.backends import GurobiOptimizer
 
+
 def test_square():
     instance = Instance([(0, 0), (1, 0), (1, 1), (0, 1)], [0, 1, 2, 3])
     optimizer = GurobiOptimizer(instance)
