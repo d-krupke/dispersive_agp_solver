@@ -4,7 +4,7 @@ import typing
 from disp_agp_solver.instance import Instance
 
 from .optimizer import SatBasedOptimizer
-from .params import OptimizerParams
+from .params import OptimizerParams, SearchStrategy
 
 
 def solve(
@@ -21,4 +21,4 @@ def solve(
     return solver.solution, solver.objective, solver.upper_bound
 
 
-__all__ = ["SatBasedOptimizer", "OptimizerParams", "solve"]
+__all__ = ["SatBasedOptimizer", "OptimizerParams", "SearchStrategy", "solve"]

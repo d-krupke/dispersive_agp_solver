@@ -1,6 +1,6 @@
 from .cp import CpSatOptimizer
 from .mip import GurobiOptimizer
-from .sat import OptimizerParams, SatBasedOptimizer
+from .sat import OptimizerParams, SatBasedOptimizer, SearchStrategy
 
 
 def solve(

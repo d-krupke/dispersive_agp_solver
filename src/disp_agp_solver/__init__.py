@@ -18,7 +18,7 @@ Dominik Krupke, 2023, Braunschweig
 
 """
 
-from .backends import solve
+from .backends import solve, OptimizerParams, SearchStrategy
 from .instance import Instance
 from .plotting import Plotter
 from .sgdb import SalzburgPolygonDataBase
@@ -28,4 +28,6 @@ __all__ = [
     "Plotter",
     "solve",
     "SalzburgPolygonDataBase",
+    "OptimizerParams",
+    "SearchStrategy",
 ]
