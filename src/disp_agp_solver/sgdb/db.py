@@ -45,6 +45,20 @@ def _graph_to_list(graph: nx.Graph):
         return components[0][::-1], components[1:]
 
 
+def get_size_from_url(instance_url):
+    # the url looks like this: https://sbgdb.cs.sbg.ac.at/db/sbgdb-20200507/polygons/random/srpg_perturbed_smr/srpg_smr9957440.graphml.xz
+    # the number at the end is the size
+    assert instance_url.endswith(".graphml.xz")
+    instance_url_short = instance_url.split("/")[-1][: -len(".graphml.xz")]
+    match = re.search(r"(?P<size>\d+)_\d+$", instance_url_short)
+    if match:
+        return int(match.group("size"))
+    # extract digits from the end of the string using regex
+    match = re.search(r"\d+$", instance_url_short)
+    assert match, f"{instance_url} does not end with a number"
+    return int(match.group())
+
+
 def _list_to_instance(outer_face, holes):
     positions = outer_face + sum(holes, [])
     position_to_index = {p: i for i, p in enumerate(positions)}
@@ -59,18 +73,6 @@ class SalzburgPolygonDataBase:
             self._urls = json.load(f)
         self._cache_folder = Path("./_salzburg_polygon_database_cache/")
 
-    def get_size_from_url(self, instance_url):
-        # the url looks like this: https://sbgdb.cs.sbg.ac.at/db/sbgdb-20200507/polygons/random/srpg_perturbed_smr/srpg_smr9957440.graphml.xz
-        # the number at the end is the size
-        assert instance_url.endswith(".graphml.xz")
-        instance_url_short = instance_url.split("/")[-1][: -len(".graphml.xz")]
-        match = re.search(r"(?P<size>\d+)_\d+$", instance_url_short)
-        if match:
-            return int(match.group("size"))
-        # extract digits from the end of the string using regex
-        match = re.search(r"\d+$", instance_url_short)
-        assert match, f"{instance_url} does not end with a number"
-        return int(match.group())
 
     def get_name_from_url(self, instance_url):
         return str(instance_url).split("/")[-1][: -len(".graphml.xz")]
@@ -94,7 +96,7 @@ class SalzburgPolygonDataBase:
 
     def iter_range(self, min_size, max_size):
         for url in self._urls["sbgdb-20200507"]:
-            size = self.get_size_from_url(url)
+            size = get_size_from_url(url)
             if min_size <= size <= max_size:
                 yield url
 

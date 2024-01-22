@@ -51,6 +51,8 @@ MIN_SIZE = 10
 MAX_SIZE = 2_000
 OPTIMALITY_TOLERANCES = [0.0001, 0.001, 0.01, 0.1]
 # Bad instances that should be skipped
+# An instance is bad if the integralization does not work and leads to self-intersections.
+# It has nothing to do with the solvers themselves.
 BLACKLIST = [
         "https://sbgdb.cs.sbg.ac.at/db/sbgdb-20200507/polygons/random/spg-c-alg6/spg-c-poly_0000100_1.graphml.xz",
     "https://sbgdb.cs.sbg.ac.at/db/sbgdb-20200507/polygons/random/spg-c-alg6/spg-c-poly_0000090_1.graphml.xz",
@@ -67,8 +69,6 @@ PUBLIC_DATA = Path(__file__).parent / "PUBLIC_DATA"
 # Data meant for debugging and investigation, not to be shared because of its size.
 PRIVATE_DATA = Path(__file__).parent / "PRIVATE_DATA"
 
-# Saving the instances to repeat the experiment on exactly the same data.
-INSTANCE_DB = PUBLIC_DATA / "instance_db.zip"
 # Saving the full experiment data for potential debugging.
 EXPERIMENT_DATA = PRIVATE_DATA / "full_experiment_data"
 # Saving the simplified experiment data for analysis.
